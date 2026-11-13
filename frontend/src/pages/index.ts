@@ -1,0 +1,5 @@
+export { HomePage } from "./HomePage"
+export { InitialPage } from "./InitialPage"
+export { ProfilePage } from "./ProfilePage"
+export { ReferencesPage } from "./ReferencesPage"
+export { QuestionPage } from "./QuestionPage"
