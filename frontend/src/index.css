@@ -31,7 +31,14 @@
   --radius-max-medium: var(--size-border-radius-button-medium);
   --radius-max-large: var(--size-border-radius-button-large);
 }
-
+@theme inline {
+  --color-max-accent-neutral-fade-secondary: var(
+    --background-accent-neutral-fade-secondary
+  );
+}
+@theme inline {
+  --color-max-tertiary: var(--background-tertiary);
+}
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -171,4 +178,7 @@
 @theme {
   --font-unbounded: "Unbounded", sans-serif;
   --font-manrope: "Manrope", sans-serif;
+}
+[class*="SelectContent__body__"]:has(.custom-select-menu) {
+  padding: 8px !important;
 }

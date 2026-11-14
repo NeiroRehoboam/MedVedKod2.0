@@ -1,55 +1,64 @@
+import { useState } from "react"
 import { Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { BottomSheet, Button, Typography } from "@maxhub/max-ui"
 
 export function ProfileActions() {
+  const [open, setOpen] = useState(false)
+
+  const handleDelete = () => {
+    setOpen(false)
+  }
+
   return (
-    <div className="space-y-2 pt-2">
-      <Button type="submit" className="h-14 w-full">
+    <div className="flex flex-col gap-2 pt-2">
+      <Button type="submit" size="large" variant="primary" stretched>
         Сохранить изменения
       </Button>
 
-      <AlertDialog>
-        <AlertDialogTrigger
-          className="w-full"
-          render={
+      <Button
+        type="button"
+        size="large"
+        variant="secondary"
+        stretched
+        onClick={() => setOpen(true)}
+      >
+        Удалить аккаунт
+      </Button>
+
+      <BottomSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Удалить аккаунт?"
+      >
+        <div className="flex flex-col gap-5">
+          <Typography.Text variant="body" color="secondary">
+            История обращений и данные анамнеза будут удалены без возможности
+            восстановления.
+          </Typography.Text>
+
+          <div className="flex flex-col gap-2">
             <Button
               type="button"
-              variant="destructive"
-              className="h-14 w-full"
-            />
-          }
-        >
-          <Trash2 className="size-4" />
-          Удалить аккаунт
-        </AlertDialogTrigger>
+              size="large"
+              variant="secondary"
+              stretched
+              onClick={() => setOpen(false)}
+            >
+              Отмена
+            </Button>
 
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Удалить аккаунт?</AlertDialogTitle>
-            <AlertDialogDescription>
-              История обращений и данные анамнеза будут удалены без возможности
-              восстановления.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction variant={"destructive"} onClick={() => {}}>
-              Удалить
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            <Button
+              type="button"
+              size="large"
+              variant="destructive"
+              stretched
+              onClick={handleDelete}
+            >
+              Удалить аккаунт
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
     </div>
   )
 }

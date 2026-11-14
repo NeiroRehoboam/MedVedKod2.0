@@ -1,24 +1,36 @@
 import { AnamnesisForm } from "@/components/common"
+import { Typography } from "@maxhub/max-ui"
 
 export function ProfilePage() {
   return (
     <div className="relative">
       <div className="relative mx-auto max-w-3xl px-6">
-        <h1 className="font-unbounded text-4xl font-medium tracking-[-0.065em]">
+        <Typography.Title
+          variant="large-strong"
+          className="font-unbounded! text-4xl!"
+        >
           Профиль
-        </h1>
+        </Typography.Title>
 
-        <p className="mt-4 max-w-lg leading-6 text-muted-foreground">
-          Расскажите о своём здоровье, чтобы МедВед мог учитывать ваши
-          особенности при обращениях.
+        <p className="mt-4">
+          <Typography.Text variant="body" color="secondary">
+            Расскажите о своём здоровье, чтобы МедВед мог учитывать ваши
+            особенности при обращениях.
+          </Typography.Text>
         </p>
 
         <section className="mt-10">
-          <h2 className="font-unbounded text-2xl font-medium tracking-[-0.045em]">
+          <Typography.Title
+            variant="large-strong"
+            className="font-unbounded! text-2xl!"
+          >
             Анамнез
-          </h2>
-          <p className="mt-2 text-muted-foreground">Все поля необязательны.</p>
-
+          </Typography.Title>
+          <p className="mt-4">
+            <Typography.Text variant="body" color="secondary">
+              Все поля необязательны.
+            </Typography.Text>
+          </p>
           <AnamnesisForm />
         </section>
       </div>
