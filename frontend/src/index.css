@@ -2,6 +2,35 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+@import "@maxhub/max-ui/dist/styles.css";
+
+@theme inline {
+  /* Background */
+  --color-max-surface: var(--background-surface);
+  --color-max-primary: var(--background-primary);
+  --color-max-secondary: var(--background-secondary);
+  --color-max-tertiary: var(--background-tertiary);
+  --color-max-card: var(--background-card);
+  --color-max-overlay: var(--background-overlay);
+  --color-max-overlay-secondary: var(--background-overlay-secondary);
+
+  /* Text */
+  --color-max-text-primary: var(--text-primary);
+  --color-max-text-secondary: var(--text-secondary);
+  --color-max-text-tertiary: var(--text-tertiary);
+  --color-max-text-primary-static: var(--text-primary-static);
+  --color-max-text-primary-inverse: var(--text-primary-inverse);
+  --color-max-text-primary-inverse-static: var(--text-primary-inverse-static);
+  --color-max-text-themed: var(--text-themed);
+  --color-max-text-negative: var(--text-negative);
+}
+@theme inline {
+  /* Border Radius */
+  --radius-max-xsmall: var(--size-border-radius-button-xsmall);
+  --radius-max-small: var(--size-border-radius-button-small);
+  --radius-max-medium: var(--size-border-radius-button-medium);
+  --radius-max-large: var(--size-border-radius-button-large);
+}
 
 @custom-variant dark (&:is(.dark *));
 

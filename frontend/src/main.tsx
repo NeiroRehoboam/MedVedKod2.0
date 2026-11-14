@@ -1,14 +1,14 @@
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
-
 import "./index.css"
 import App from "./routers/App.tsx"
-import { ThemeProvider } from "@/components/theme-provider.tsx"
+import { MaxUI } from "@maxhub/max-ui"
+import "@maxhub/max-ui/dist/styles.css"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider>
+    <MaxUI colorScheme="light">
       <App />
-    </ThemeProvider>
+    </MaxUI>
   </StrictMode>
 )

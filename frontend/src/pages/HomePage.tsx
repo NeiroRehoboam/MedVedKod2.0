@@ -1,30 +1,67 @@
-import { ArrowUpRight, Inbox } from "lucide-react"
-import { Link } from "react-router-dom"
-import { Button } from "@/components/ui/button"
-import shape from "@/assets/shapes/shape-1.svg"
-import { Badge } from "@/components/ui/badge"
+import { ArrowUpRight } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
+  Button,
+  CellSimple,
+  IconButton,
+  StatusBadge,
+  Typography,
+} from "@maxhub/max-ui"
+
+import shape from "@/assets/shapes/shape-1.svg"
 import { mockAppeals } from "@/data/appeals.mock"
 
 export function HomePage() {
+  const navigate = useNavigate()
+
+  const handleNewAppeal = () => {
+    navigate("/question")
+  }
+
   return (
-    <div className="mx-auto w-full max-w-3xl overflow-x-clip px-6">
+    <main className="mx-auto w-full max-w-3xl px-5 pt-3 sm:px-8">
       {/* Главное действие */}
-      <section className="relative isolate rounded-3xl border bg-background p-6 shadow-xl shadow-neutral-200/40 sm:p-8">
-        {/* Декоративная фигура */}
+      <div className="relative isolate">
+        <section className="relative z-0 rounded-max-medium bg-max-primary p-6 sm:p-8">
+          <div>
+            <div>
+              <Typography.Title
+                variant="large-strong"
+                className="font-unbounded! text-3xl!"
+              >
+                Что вас
+                <br />
+                беспокоит?
+              </Typography.Title>
+            </div>
+
+            <div className="mt-4 max-w-sm leading-6">
+              <Typography.Text variant="body" color="secondary">
+                Расскажите о самочувствии. МедВед задаст несколько вопросов и
+                поможет подготовиться к обращению к врачу.
+              </Typography.Text>
+            </div>
+
+            <div className="mt-8">
+              <Button
+                size="medium"
+                variant="primary"
+                iconAfter={<ArrowUpRight size={20} />}
+                onClick={handleNewAppeal}
+              >
+                Начать разговор
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Фигура поверх карточки */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -right-3 -bottom-9 z-20 size-28 rotate-[-16deg]"
+          className="pointer-events-none absolute -right-3 -bottom-9 z-10 size-30 rotate-[-16deg]"
         >
           <div
-            className="absolute inset-0 bg-linear-to-br from-sky-300 via-sky-600 to-sky-700"
+            className="absolute inset-0 bg-linear-to-br from-max-text-themed/10 via-max-text-themed/70 to-max-text-themed"
             style={{
               maskImage: `url("${shape}")`,
               WebkitMaskImage: `url("${shape}")`,
@@ -34,85 +71,87 @@ export function HomePage() {
               WebkitMaskRepeat: "no-repeat",
               maskPosition: "center",
               WebkitMaskPosition: "center",
-              filter: "drop-shadow(0 12px 20px rgba(14,165,233,0.2))",
             }}
           />
         </div>
+      </div>
 
-        <div className="relative z-10">
-          <h2 className="max-w-md font-unbounded text-2xl leading-[1.2] font-semibold tracking-[-0.045em] text-foreground">
-            Что вас
-            <br />
-            беспокоит?
-          </h2>
-
-          <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
-            Расскажите о самочувствии. МедВед задаст несколько вопросов и
-            поможет подготовиться к обращению к врачу.
-          </p>
-
-          <div className="mt-7 flex flex-wrap items-end justify-between gap-4">
-            <Button className="h-12 px-5 font-medium">
-              <Link to="/question">Начать разговор</Link> <ArrowUpRight />
-            </Button>
-          </div>
-        </div>
-      </section>
-      <section className="mt-10">
-        <div className="mb-6 flex items-center justify-between gap-2">
-          <h2 className="max-w-md font-unbounded text-2xl leading-[1.2] font-semibold tracking-[-0.045em] text-foreground">
+      {/* История обращений */}
+      <section aria-labelledby="appeals-heading" className="mt-10">
+        <div id="appeals-heading" className="mb-5">
+          <Typography.Title
+            variant="medium-strong"
+            className="font-unbounded! text-xl!"
+          >
             Мои обращения
-          </h2>
+          </Typography.Title>
         </div>
-        <div className="flex flex-col gap-2">
-          {mockAppeals.length > 0 ? (
-            mockAppeals.map((item, index) => (
-              <div
-                className="flex items-center justify-between gap-3 rounded-3xl border bg-background px-5 py-3 shadow-xs shadow-neutral-200/20"
-                key={index}
-              >
-                <div className="flex flex-col gap-3">
-                  <p className="font-semibold">
-                    {item.title}
-                    {item.status == "in_progress" && (
-                      <Badge variant={"secondary"} className="ml-2">
-                        В процессе
-                      </Badge>
-                    )}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{item.date}</p>
+
+        {mockAppeals.length > 0 ? (
+          <div className="flex flex-col gap-2.5">
+            {mockAppeals.map((appeal) => {
+              const isActive = appeal.status === "in_progress"
+
+              return (
+                <div key={appeal.id} className="rounded-max-medium bg-max-primary p-2">
+                  <CellSimple
+                    title={
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>{appeal.title}</span>
+
+                        {isActive && (
+                          <StatusBadge status="neutral" text="В процессе" />
+                        )}
+                      </div>
+                    }
+                    subtitle={appeal.date}
+                    subtitleMode="secondary"
+                    height="normal"
+                    surface="default"
+                    separator={false}
+                    showChevron={false}
+                    after={
+                      <IconButton
+                        aria-label={`Открыть обращение: ${appeal.title}`}
+                        disabled={false}
+                        loading={false}
+                        size="small"
+                        variant="secondary-contrast"
+                        onClick={() => navigate("/question")}
+                      >
+                        <ArrowUpRight size={18} strokeWidth={1.8} />
+                      </IconButton>
+                    }
+                  />
                 </div>
-                <Button variant={"outline"} size={"icon-lg"}>
-                  <Link to="/question">
-                    <ArrowUpRight />
-                  </Link>
-                </Button>
-              </div>
-            ))
-          ) : (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <Inbox />
-                </EmptyMedia>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center rounded-max-medium bg-max-secondary px-6 py-12 text-center">
+            <Typography.Title variant="large-strong" className="text-lg!">
+              Обращений пока нет
+            </Typography.Title>
 
-                <EmptyTitle>Обращений пока нет</EmptyTitle>
+            <div className="mt-3 max-w-xs leading-6">
+              <Typography.Text variant="body" color="secondary">
+                Здесь будет храниться история ваших обращений. Расскажите, что
+                вас беспокоит, чтобы начать первый диалог.
+              </Typography.Text>
+            </div>
 
-                <EmptyDescription className="w-sm">
-                  Здесь будет храниться история ваших обращений. Расскажите, что
-                  вас беспокоит, чтобы начать первый диалог.
-                </EmptyDescription>
-              </EmptyHeader>
-
-              <EmptyContent className="flex-row justify-center gap-2">
-                <Button render={<Link to="/question" />} variant={"outline"}>
-                  Создать обращение
-                </Button>
-              </EmptyContent>
-            </Empty>
-          )}
-        </div>
+            <div className="mt-6">
+              <Button
+                variant="secondary"
+                size="medium"
+                onClick={handleNewAppeal}
+              >
+                Создать обращение
+              </Button>
+            </div>
+          </div>
+        )}
       </section>
-    </div>
+    </main>
   )
 }
