@@ -1,3 +1,4 @@
+import { PageDescription, PageTitle } from "@/components/common"
 import {
   Accordion,
   AccordionContent,
@@ -5,44 +6,34 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { mockQuestions } from "@/data/questions.mock"
-import { Typography } from "@maxhub/max-ui"
 
 export function ReferencesPage() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-6">
+    <div>
       {/* Заголовок */}
-      <section className="mb-10">
-        <Typography.Title
-          variant="large-strong"
-          className="font-unbounded! text-4xl!"
-        >
+      <section className="mb-8 space-y-5">
+        <PageTitle as="h1">
           Что вас
           <br />
           беспокоит?
-        </Typography.Title>
+        </PageTitle>
 
-        <p className="mt-4">
-          <Typography.Text variant="body" color="secondary">
-            Собрали ответы на самые частые вопросы о МедВеде. Возможно, здесь
-            уже есть то, что вы ищете.
-          </Typography.Text>
-        </p>
+        <PageDescription>
+          Собрали ответы на самые частые вопросы о МедВеде. Возможно, здесь уже
+          есть то, что вы ищете.
+        </PageDescription>
       </section>
 
       {/* Частые вопросы */}
       <section>
-        <Accordion className={"bg-max-secondary"}>
+        <Accordion className="rounded-max-medium bg-max-secondary">
           {mockQuestions.map((item) => (
             <AccordionItem key={item.id} value={item.id}>
               <AccordionTrigger className="text-base">
-                <Typography.Title>{item.question}</Typography.Title>
+                {item.question}
               </AccordionTrigger>
 
-              <AccordionContent>
-                <Typography.Text variant="body" color="primary">
-                  {item.answer}
-                </Typography.Text>
-              </AccordionContent>
+              <AccordionContent>{item.answer}</AccordionContent>
             </AccordionItem>
           ))}
 

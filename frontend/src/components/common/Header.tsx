@@ -1,6 +1,7 @@
 import { MessageCircleQuestionMark } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
-import { Button, IconButton } from "@maxhub/max-ui"
+import { IconButton } from "@maxhub/max-ui"
+import { DoctorSignature } from "./typography/DoctorSignature"
 
 export const Header = () => {
   const navigate = useNavigate()
@@ -12,13 +13,13 @@ export const Header = () => {
           МедВед
         </h1>
 
-        <span className="absolute top-4 left-20 z-20 -rotate-6 font-doctor text-2xl leading-none whitespace-nowrap text-max-text-themed">
+        <DoctorSignature className="absolute top-4 left-20 z-20 -rotate-6">
           С заботой о вас
-        </span>
+        </DoctorSignature>
       </Link>
 
       <IconButton
-        size="medium"
+        size="small"
         variant="secondary"
         onClick={() => navigate("/references")}
         aria-label="Помощь"

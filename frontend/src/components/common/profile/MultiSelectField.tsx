@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react"
 import { Check, Plus, Search, X } from "lucide-react"
-import { Button, Input, Select, Typography } from "@maxhub/max-ui"
+import { Button, Input, Select } from "@maxhub/max-ui"
+import { FormLabel } from "./FormLabel"
+import { PageDescription } from "../typography"
 
 type Props = {
   label: string
@@ -62,10 +64,8 @@ export function MultiSelectField({ label, options, value, onChange }: Props) {
     )
 
   return (
-    <div className="flex flex-col gap-3">
-      <Typography.Text variant="body" color="primary">
-        {label}
-      </Typography.Text>
+    <div>
+      <FormLabel htmlFor="multi-select">{label}</FormLabel>
 
       <Select
         aria-label={label}
@@ -121,11 +121,9 @@ export function MultiSelectField({ label, options, value, onChange }: Props) {
               })}
 
               {filteredOptions.length === 0 && (
-                <p className="py-3 text-center text-sm">
-                  <Typography.Text variant="body" color="secondary">
-                    Ничего не найдено
-                  </Typography.Text>
-                </p>
+                <div className="py-3 text-center text-sm">
+                  <PageDescription>Ничего не найдено</PageDescription>
+                </div>
               )}
             </div>
 
@@ -152,7 +150,7 @@ export function MultiSelectField({ label, options, value, onChange }: Props) {
       />
 
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mt-3">
           {value.map((item) => (
             <div
               key={item}

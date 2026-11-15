@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { BottomSheet, Button, Typography } from "@maxhub/max-ui"
+import { PageDescription, PageTitle } from "../typography"
 
 export function ProfileActions() {
   const [open, setOpen] = useState(false)
@@ -27,18 +28,11 @@ export function ProfileActions() {
       <BottomSheet open={open} onClose={() => setOpen(false)}>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3 pt-2 text-center">
-            <div>
-              <Typography.Title className="font-unbounded!">
-                Удалить аккаунт?
-              </Typography.Title>
-            </div>
-
-            <div>
-              <Typography.Text variant="body" color="secondary">
-                История обращений и данные анамнеза будут удалены без
-                возможности восстановления.
-              </Typography.Text>
-            </div>
+            <PageTitle as="h4">Удалить аккаунт?</PageTitle>
+            <PageDescription>
+              История обращений и данные анамнеза будут удалены без возможности
+              восстановления.
+            </PageDescription>
           </div>
 
           <div className="flex flex-col gap-2">

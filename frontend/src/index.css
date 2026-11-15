@@ -182,3 +182,36 @@
 [class*="SelectContent__body__"]:has(.custom-select-menu) {
   padding: 8px !important;
 }
+
+.max-button-between {
+  justify-content: space-between !important;
+}
+
+.max-button-between [class*="Button__content"] {
+  flex: none !important;
+}
+
+.max-button-between [class*="Button__iconAfter"] {
+  margin-left: auto !important;
+}
+
+.max-button-align {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.max-button-align [class*="Button__iconBefore"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.max-button-align [class*="Button__content"] {
+  display: flex;
+  align-items: center;
+  line-height: 1 !important;
+}
+.max-button-align [class*="Button__iconBefore"] {
+  transform: translateY(1px);
+}

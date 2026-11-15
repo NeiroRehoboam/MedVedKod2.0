@@ -39,7 +39,7 @@ export function BottomNavigation() {
                 to={to}
                 aria-label={label}
                 aria-current={isActive ? "page" : undefined}
-                className="relative flex size-12 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-max-text-themed"
+                className="relative flex size-12 items-center justify-center"
               >
                 {isActive && (
                   <span className="absolute inset-0 rounded-max-medium bg-max-primary" />
@@ -65,7 +65,7 @@ export function BottomNavigation() {
             type="button"
             aria-label="Создать обращение"
             onClick={() => navigate("/question")}
-            className="flex size-14 items-center justify-center rounded-max-medium bg-max-text-primary text-max-text-primary-inverse shadow-lg transition-transform duration-200 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-max-text-themed active:scale-95"
+            className="flex size-14 items-center justify-center rounded-max-medium bg-max-text-primary text-max-text-primary-inverse shadow-lg transition-transform duration-200 active:scale-95"
           >
             <Plus className="size-5" strokeWidth={2.5} aria-hidden="true" />
           </button>
