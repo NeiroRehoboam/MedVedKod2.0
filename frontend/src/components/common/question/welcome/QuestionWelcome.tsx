@@ -35,7 +35,7 @@ export function QuestionWelcome({ onStart, onHome }: QuestionWelcomeProps) {
 
         {/* Дисклеймер */}
         <div className="space-y-5">
-          <div className="relative rounded-max-medium bg-max-primary p-6 shadow-xl shadow-neutral-200/60 sm:p-8">
+          <div className="relative rounded-max-medium bg-max-primary p-6 shadow-sm sm:p-8">
             <div className="mb-3 flex items-center gap-3 text-max-text-themed!">
               <ShieldCheck className="size-5" strokeWidth={1.8} />
 
