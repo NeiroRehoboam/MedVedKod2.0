@@ -1,3 +1,7 @@
 export { BottomNavigation } from "./BottomNavigation"
 export { Header } from "./Header"
 export { AnamnesisForm } from "./profile/AnamnesisForm"
+export { ProfileActions } from "./profile/ProfileActions"
+export * from "./typography"
+export * from "./home"
+export * from "./question"

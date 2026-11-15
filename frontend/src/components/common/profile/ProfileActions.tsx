@@ -1,55 +1,62 @@
-import { Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { useState } from "react"
+import { BottomSheet, Button, Typography } from "@maxhub/max-ui"
+import { PageDescription, PageTitle } from "../typography"
 
 export function ProfileActions() {
+  const [open, setOpen] = useState(false)
+
+  const handleDelete = () => {
+    setOpen(false)
+  }
+
   return (
-    <div className="space-y-2 pt-2">
-      <Button type="submit" className="h-14 w-full">
+    <div className="flex flex-col gap-2 pt-2">
+      <Button type="submit" size="large" variant="primary" stretched>
         Сохранить изменения
       </Button>
 
-      <AlertDialog>
-        <AlertDialogTrigger
-          className="w-full"
-          render={
-            <Button
-              type="button"
-              variant="destructive"
-              className="h-14 w-full"
-            />
-          }
-        >
-          <Trash2 className="size-4" />
-          Удалить аккаунт
-        </AlertDialogTrigger>
+      <Button
+        type="button"
+        size="large"
+        variant="secondary"
+        stretched
+        onClick={() => setOpen(true)}
+      >
+        Удалить аккаунт
+      </Button>
 
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Удалить аккаунт?</AlertDialogTitle>
-            <AlertDialogDescription>
+      <BottomSheet open={open} onClose={() => setOpen(false)}>
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-3 pt-2 text-center">
+            <PageTitle as="h4">Удалить аккаунт?</PageTitle>
+            <PageDescription>
               История обращений и данные анамнеза будут удалены без возможности
               восстановления.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction variant={"destructive"} onClick={() => {}}>
-              Удалить
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </PageDescription>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Button
+              type="button"
+              size="medium"
+              variant="destructive"
+              stretched
+              onClick={handleDelete}
+            >
+              Удалить аккаунт
+            </Button>
+            <Button
+              type="button"
+              size="medium"
+              variant="secondary"
+              stretched
+              onClick={() => setOpen(false)}
+            >
+              Отмена
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
     </div>
   )
 }

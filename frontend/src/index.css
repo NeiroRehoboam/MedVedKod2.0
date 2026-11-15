@@ -2,7 +2,43 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+@import "@maxhub/max-ui/dist/styles.css";
 
+@theme inline {
+  /* Background */
+  --color-max-surface: var(--background-surface);
+  --color-max-primary: var(--background-primary);
+  --color-max-secondary: var(--background-secondary);
+  --color-max-tertiary: var(--background-tertiary);
+  --color-max-card: var(--background-card);
+  --color-max-overlay: var(--background-overlay);
+  --color-max-overlay-secondary: var(--background-overlay-secondary);
+
+  /* Text */
+  --color-max-text-primary: var(--text-primary);
+  --color-max-text-secondary: var(--text-secondary);
+  --color-max-text-tertiary: var(--text-tertiary);
+  --color-max-text-primary-static: var(--text-primary-static);
+  --color-max-text-primary-inverse: var(--text-primary-inverse);
+  --color-max-text-primary-inverse-static: var(--text-primary-inverse-static);
+  --color-max-text-themed: var(--text-themed);
+  --color-max-text-negative: var(--text-negative);
+}
+@theme inline {
+  /* Border Radius */
+  --radius-max-xsmall: var(--size-border-radius-button-xsmall);
+  --radius-max-small: var(--size-border-radius-button-small);
+  --radius-max-medium: var(--size-border-radius-button-medium);
+  --radius-max-large: var(--size-border-radius-button-large);
+}
+@theme inline {
+  --color-max-accent-neutral-fade-secondary: var(
+    --background-accent-neutral-fade-secondary
+  );
+}
+@theme inline {
+  --color-max-tertiary: var(--background-tertiary);
+}
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -142,4 +178,40 @@
 @theme {
   --font-unbounded: "Unbounded", sans-serif;
   --font-manrope: "Manrope", sans-serif;
+}
+[class*="SelectContent__body__"]:has(.custom-select-menu) {
+  padding: 8px !important;
+}
+
+.max-button-between {
+  justify-content: space-between !important;
+}
+
+.max-button-between [class*="Button__content"] {
+  flex: none !important;
+}
+
+.max-button-between [class*="Button__iconAfter"] {
+  margin-left: auto !important;
+}
+
+.max-button-align {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.max-button-align [class*="Button__iconBefore"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.max-button-align [class*="Button__content"] {
+  display: flex;
+  align-items: center;
+  line-height: 1 !important;
+}
+.max-button-align [class*="Button__iconBefore"] {
+  transform: translateY(1px);
 }

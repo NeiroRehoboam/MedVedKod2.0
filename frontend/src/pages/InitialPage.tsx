@@ -1,13 +1,18 @@
-import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import shapeImage from "@/assets/shapes/shape-1.svg"
+import { Button } from "@maxhub/max-ui"
+import {
+  DoctorSignature,
+  PageDescription,
+  PageTitle,
+} from "@/components/common"
 
 export function InitialPage() {
   const navigate = useNavigate()
 
   return (
-    <main className="relative isolate flex min-h-dvh flex-col overflow-hidden bg-muted">
+    <main className="relative isolate flex min-h-dvh flex-col overflow-hidden">
       {/* Декоративная фигура */}
       <img
         src={shapeImage}
@@ -20,39 +25,41 @@ export function InitialPage() {
           className="flex flex-1 flex-col justify-center py-16"
           aria-labelledby="welcome-heading"
         >
-          <div>
-            <h1
-              id="welcome-heading"
-              className="font-unbounded text-5xl leading-[1.18] font-medium tracking-[-0.04em] sm:text-5xl"
-            >
-              Привет!
-              <br />Я МедВед
-            </h1>
+          <PageTitle className="text-5xl!">
+            Привет!
+            <br />Я МедВед
+          </PageTitle>
 
-            <p className="mt-2 ml-20 w-fit -rotate-4 font-doctor text-4xl leading-none text-primary sm:ml-32">
-              С заботой о вас
-            </p>
+          <DoctorSignature className="ml-20 -rotate-4 text-4xl">
+            С заботой о вас
+          </DoctorSignature>
 
-            <p className="mt-10 max-w-sm text-base leading-7 text-muted-foreground">
+          <div className="mt-7 max-w-sm leading-7">
+            <PageDescription>
               Помогу разобраться с жалобами и подскажу, к какому специалисту
               обратиться.
-            </p>
+            </PageDescription>
           </div>
         </section>
 
-        <footer className="space-y-5">
+        <footer className="space-y-4">
           <Button
-            size="lg"
-            className="h-14 w-full justify-between px-6 text-base font-medium"
+            disabled={false}
+            loading={false}
+            size="large"
+            variant="primary"
+            iconAfter={<ArrowRight />}
+            className="max-button-between w-full"
             onClick={() => navigate("/home")}
           >
             Начать консультацию
-            <ArrowRight className="size-5" />
           </Button>
 
-          <p className="max-w-sm px-1 text-center text-xs leading-5 text-muted-foreground">
-            МедВед не ставит диагноз и не заменяет консультацию врача.
-          </p>
+          <div className="max-w-sm text-center leading-5">
+            <PageDescription color="tertiary" variant="description">
+              МедВед не ставит диагноз и не заменяет консультацию врача.
+            </PageDescription>
+          </div>
         </footer>
       </div>
     </main>

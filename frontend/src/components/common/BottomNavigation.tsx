@@ -22,10 +22,11 @@ export function BottomNavigation() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[max(20px,env(safe-area-inset-bottom))] z-50 mx-auto max-w-3xl">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex w-full items-center justify-between gap-3 px-4 sm:px-6">
+        {/* Основная навигация */}
         <nav
           aria-label="Основная навигация"
-          className="pointer-events-auto flex shrink-0 items-center gap-1 rounded-full bg-foreground p-1.5 shadow-xl"
+          className="pointer-events-auto flex shrink-0 items-center gap-1 rounded-max-large bg-max-text-primary p-1.5 shadow-lg"
         >
           {items.map(({ to, label, icon: Icon, paths }) => {
             const isActive = paths.some(
@@ -38,17 +39,19 @@ export function BottomNavigation() {
                 to={to}
                 aria-label={label}
                 aria-current={isActive ? "page" : undefined}
-                className="relative flex size-12 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="relative flex size-12 items-center justify-center"
               >
                 {isActive && (
-                  <span className="absolute inset-0 rounded-full bg-background" />
+                  <span className="absolute inset-0 rounded-max-medium bg-max-primary" />
                 )}
 
                 <Icon
                   aria-hidden="true"
                   strokeWidth={1.8}
                   className={`relative z-10 size-5 transition-colors duration-200 ${
-                    isActive ? "text-foreground" : "text-background"
+                    isActive
+                      ? "text-max-text-primary"
+                      : "text-max-text-primary-inverse"
                   }`}
                 />
               </Link>
@@ -56,19 +59,15 @@ export function BottomNavigation() {
           })}
         </nav>
 
-        <div className="pointer-events-auto relative shrink-0">
+        {/* Создание обращения */}
+        <div className="pointer-events-auto shrink-0">
           <button
             type="button"
             aria-label="Создать обращение"
             onClick={() => navigate("/question")}
-
-            className="relative flex h-14 w-14 items-center justify-center rounded-full bg-foreground text-background shadow-xl"
+            className="flex size-14 items-center justify-center rounded-max-medium bg-max-text-primary text-max-text-primary-inverse shadow-lg transition-transform duration-200 active:scale-95"
           >
-            <Plus
-              className="size-5 shrink-0"
-              strokeWidth={3}
-              aria-hidden="true"
-            />
+            <Plus className="size-5" strokeWidth={2.5} aria-hidden="true" />
           </button>
         </div>
       </div>

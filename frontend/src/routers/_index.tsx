@@ -1,6 +1,9 @@
 import type { FC } from "react"
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
-import { Layout } from "@/layouts/Layout"
+
+import { AppLayout } from "@/layouts/AppLayout"
+import { MainLayout } from "@/layouts/MainLayout"
+
 import {
   HomePage,
   InitialPage,
@@ -11,30 +14,34 @@ import {
 
 const router = createBrowserRouter([
   {
-    path: "/",
-    element: <InitialPage />,
-  },
-  {
-    path: "/",
-    element: <Layout />,
+    element: <AppLayout />,
     children: [
       {
-        path: "home",
-        element: <HomePage />,
+        path: "/",
+        element: <InitialPage />,
       },
       {
-        path: "profile",
-        element: <ProfilePage />,
+        element: <MainLayout />,
+        children: [
+          {
+            path: "/home",
+            element: <HomePage />,
+          },
+          {
+            path: "/profile",
+            element: <ProfilePage />,
+          },
+          {
+            path: "/references",
+            element: <ReferencesPage />,
+          },
+        ],
       },
       {
-        path: "references",
-        element: <ReferencesPage />,
+        path: "/question",
+        element: <QuestionPage />,
       },
     ],
-  },
-  {
-    path: "/question",
-    element: <QuestionPage />,
   },
 ])
 

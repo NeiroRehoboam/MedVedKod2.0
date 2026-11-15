@@ -1,3 +1,4 @@
+import { PageDescription, PageTitle } from "@/components/common"
 import {
   Accordion,
   AccordionContent,
@@ -8,23 +9,24 @@ import { mockQuestions } from "@/data/questions.mock"
 
 export function ReferencesPage() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-6">
+    <div>
       {/* Заголовок */}
-      <section className="mb-10">
-        <h1 className="font-unbounded text-4xl leading-[1.12] font-medium tracking-[-0.065em]">
-          Помощь
-          <br />и ответы
-        </h1>
+      <section className="mb-8 space-y-5">
+        <PageTitle as="h1">
+          Что вас
+          <br />
+          беспокоит?
+        </PageTitle>
 
-        <p className="mt-4 max-w-md text-muted-foreground">
-          Собрали ответы на самые частые вопросы о МедВед. Возможно, здесь уже
+        <PageDescription>
+          Собрали ответы на самые частые вопросы о МедВеде. Возможно, здесь уже
           есть то, что вы ищете.
-        </p>
+        </PageDescription>
       </section>
 
       {/* Частые вопросы */}
       <section>
-        <Accordion>
+        <Accordion className="rounded-max-medium bg-max-secondary">
           {mockQuestions.map((item) => (
             <AccordionItem key={item.id} value={item.id}>
               <AccordionTrigger className="text-base">

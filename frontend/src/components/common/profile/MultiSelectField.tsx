@@ -1,22 +1,8 @@
-import { useState } from "react"
-import { Check, Plus, X } from "lucide-react"
-
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import {
-  Command,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandEmpty,
-} from "@/components/ui/command"
+import { useMemo, useState } from "react"
+import { Check, Plus, Search, X } from "lucide-react"
+import { Button, Input, Select } from "@maxhub/max-ui"
+import { FormLabel } from "./FormLabel"
+import { PageDescription } from "../typography"
 
 type Props = {
   label: string
@@ -27,15 +13,31 @@ type Props = {
 
 export function MultiSelectField({ label, options, value, onChange }: Props) {
   const [search, setSearch] = useState("")
-  const [open, setOpen] = useState(false)
+  const [customOptions, setCustomOptions] = useState<string[]>([])
 
-  const add = (item: string) => {
-    const text = item.trim()
+  const allOptions = useMemo(
+    () => [...new Set([...options, ...customOptions, ...value])],
+    [options, customOptions, value]
+  )
+
+  const filteredOptions = allOptions.filter((item) =>
+    item.toLowerCase().includes(search.trim().toLowerCase())
+  )
+
+  const addCustom = () => {
+    const text = search.trim()
     if (!text) return
 
-    const exists = value.some((v) => v.toLowerCase() === text.toLowerCase())
+    const existing = allOptions.find(
+      (item) => item.toLowerCase() === text.toLowerCase()
+    )
 
-    if (!exists) {
+    if (existing) {
+      if (!value.includes(existing)) {
+        onChange([...value, existing])
+      }
+    } else {
+      setCustomOptions((prev) => [...prev, text])
       onChange([...value, text])
     }
 
@@ -46,95 +48,124 @@ export function MultiSelectField({ label, options, value, onChange }: Props) {
     if (value.includes(item)) {
       onChange(value.filter((v) => v !== item))
     } else {
-      add(item)
+      onChange([...value, item])
     }
   }
 
-  const filteredOptions = options.filter((item) =>
-    item.toLowerCase().includes(search.toLowerCase())
-  )
+  const selectOptions = allOptions.map((item) => ({
+    label: item,
+    value: item,
+  }))
 
   const canAddCustom =
     search.trim().length > 0 &&
-    !options.some(
+    !allOptions.some(
       (item) => item.toLowerCase() === search.trim().toLowerCase()
-    ) &&
-    !value.some((item) => item.toLowerCase() === search.trim().toLowerCase())
+    )
 
   return (
-    <div className="space-y-3">
-      <Label>{label}</Label>
+    <div>
+      <FormLabel htmlFor="multi-select">{label}</FormLabel>
 
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          render={<Button type="button" variant="default" className="h-11" />}
-        >
-          <Plus className="size-4" />
-          Выбрать или добавить
-        </PopoverTrigger>
+      <Select
+        aria-label={label}
+        multiple
+        size="large"
+        placeholder="Выбрать или добавить"
+        value={value}
+        options={selectOptions}
+        onValueChange={(next: string[]) => onChange(next)}
+        dropdownWidth="trigger"
+        withClearButton
+        customDropdownMenu={
+          <div className="custom-select-menu flex flex-col">
+            <div className="pb-2">
+              <Input
+                size="medium"
+                mode="default"
+                placeholder="Поиск или свой вариант..."
+                iconBefore={<Search size={20} />}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && canAddCustom) {
+                    event.preventDefault()
+                    addCustom()
+                  }
+                }}
+                withClearButton
+              />
+            </div>
 
-        <PopoverContent
-          align="start"
-          className="w-[min(320px,calc(100vw-32px))] p-0"
-        >
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="Поиск или свой вариант..."
-              value={search}
-              onValueChange={setSearch}
-            />
+            <div className="max-h-56 overflow-y-auto">
+              {filteredOptions.map((item) => {
+                const selected = value.includes(item)
 
-            <CommandList>
-              {filteredOptions.length === 0 && !canAddCustom && (
-                <CommandEmpty>Ничего не найдено</CommandEmpty>
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => toggle(item)}
+                    aria-pressed={selected}
+                    className={`flex min-h-11 w-full items-center justify-between rounded-max-small px-3 text-left text-sm transition-colors ${
+                      selected && "bg-max-tertiary"
+                    }`}
+                  >
+                    {item}
+
+                    {selected && (
+                      <Check size={15} className="text-max-text-primary" />
+                    )}
+                  </button>
+                )
+              })}
+
+              {filteredOptions.length === 0 && (
+                <div className="py-3 text-center text-sm">
+                  <PageDescription>Ничего не найдено</PageDescription>
+                </div>
               )}
+            </div>
 
-              <CommandGroup>
-                {filteredOptions.map((item) => {
-                  const selected = value.includes(item)
+            {canAddCustom && (
+              <div className="border-t border-max-tertiary p-2">
+                <Button
+                  disabled={false}
+                  iconAfter={false}
+                  iconBefore={<Plus size={15} />}
+                  loading={false}
+                  size="xsmall"
+                  stretched={false}
+                  variant="ghost"
+                  className="w-full"
 
-                  return (
-                    <CommandItem key={item} onSelect={() => toggle(item)}>
-                      <Check
-                        className={`mr-2 size-4 ${
-                          selected ? "text-primary" : "opacity-0"
-                        }`}
-                      />
-                      {item}
-                    </CommandItem>
-                  )
-                })}
-
-                {canAddCustom && (
-                  <CommandItem onSelect={() => add(search)}>
-                    <Plus className="mr-2 size-4" />
-                    Добавить «{search.trim()}»
-                  </CommandItem>
-                )}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+                  onClick={addCustom}
+                >
+                  Добавить «{search.trim()}»
+                </Button>
+              </div>
+            )}
+          </div>
+        }
+      />
 
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mt-3">
           {value.map((item) => (
-            <Badge
+            <div
               key={item}
-              variant="outline"
-              className="h-9 gap-2 px-3 text-sm"
+              className="inline-flex items-center gap-1 rounded-max-small bg-max-tertiary py-1 pr-1 pl-2"
             >
-              {item}
-
+              <p>{item}</p>
               <button
                 type="button"
-                aria-label={`Убрать ${item}`}
+                aria-label={`Удалить ${item}`}
                 onClick={() => onChange(value.filter((v) => v !== item))}
+                className="rounded-max-button-xsmall flex size-7 shrink-0 items-center justify-center text-max-text-secondary transition-colors hover:bg-max-secondary hover:text-max-text-primary"
               >
-                <X className="size-3.5" />
+                <X size={15} />
               </button>
-            </Badge>
+            </div>
           ))}
         </div>
       )}
