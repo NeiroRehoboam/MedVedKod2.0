@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Message, MessageContent } from "@/components/ui/message"
-import { Bubble, BubbleContent } from "@/components/ui/bubble"
+import { Button, Typography } from "@maxhub/max-ui"
+
 import type { Question } from "@/data/questions-patient.mock"
 
 type QuestionCardProps = {
@@ -20,27 +19,21 @@ export function QuestionCard({
   useEffect(() => {
     window.scrollTo(0, 0)
     headingRef.current?.focus({ preventScroll: true })
-  }, [])
+  }, [question.text])
 
   return (
     <section className="w-full space-y-7" aria-labelledby="question-heading">
-      <div className="space-y-3">
-        <Message>
-          <MessageContent className="w-full">
-            <Bubble className="w-full max-w-full">
-              <BubbleContent className="px-5 py-4 text-lg sm:text-xl">
-                <h1
-                  ref={headingRef}
-                  id="question-heading"
-                  tabIndex={-1}
-                  className="outline-none"
-                >
-                  {question.text}
-                </h1>
-              </BubbleContent>
-            </Bubble>
-          </MessageContent>
-        </Message>
+      <div className="rounded-max-medium bg-max-text-themed px-5 py-4">
+        <h1
+          ref={headingRef}
+          id="question-heading"
+          tabIndex={-1}
+          className="outline-none"
+        >
+          <Typography.Title className="text-white">
+            {question.text}
+          </Typography.Title>
+        </h1>
       </div>
 
       {question.options.length > 0 && (
@@ -49,12 +42,11 @@ export function QuestionCard({
           role="group"
           aria-labelledby="question-options-label"
         >
-          <p
-            id="question-options-label"
-            className="text-xs font-medium text-muted-foreground"
-          >
-            Выберите подходящий вариант
-          </p>
+          <div id="question-options-label">
+            <Typography.Text variant="body" color="secondary">
+              Выберите подходящий вариант
+            </Typography.Text>
+          </div>
 
           <div className="flex flex-wrap gap-2">
             {question.options.map((option) => {
@@ -64,14 +56,10 @@ export function QuestionCard({
                 <Button
                   key={option}
                   type="button"
-                  variant={selected ? "default" : "outline"}
+                  size="xsmall"
+                  variant={selected ? "primary" : "secondary"}
                   aria-pressed={selected}
                   onClick={() => onAnswer(option)}
-                  className={`min-h-11 rounded-full px-5 text-sm transition-colors ${
-                    selected
-                      ? "bg-foreground text-background hover:bg-foreground/90"
-                      : ""
-                  }`}
                 >
                   {option}
                 </Button>

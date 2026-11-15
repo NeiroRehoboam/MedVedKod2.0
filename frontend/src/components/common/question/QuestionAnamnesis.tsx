@@ -14,7 +14,7 @@ export function QuestionAnamnesis({ onContinue, onBack, onHome }: Props) {
   }, [])
 
   return (
-    <main className="min-h-dvh bg-muted">
+    <main className="min-h-dvh bg-max-surface">
       <div className="mx-auto w-full max-w-3xl px-5 pt-6 pb-[max(32px,env(safe-area-inset-bottom))] sm:px-8 sm:pt-8">
         <QuestionHeader onHome={onHome} />
         <section className="mt-10 sm:mt-14" aria-labelledby="anamnesis-heading">
@@ -26,7 +26,7 @@ export function QuestionAnamnesis({ onContinue, onBack, onHome }: Props) {
           </h1>
           <p className="mt-4 max-w-lg leading-6 text-muted-foreground">
             Здесь данные из вашего профиля. Если всё верно, нажмите «Далее».
-            Если что-то изменилось — поправьте или дополните.
+            Если что-то изменилось - поправьте или дополните.
           </p>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
             Все поля необязательны. Изменения сохранятся в профиле.

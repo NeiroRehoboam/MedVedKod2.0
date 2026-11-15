@@ -1,6 +1,7 @@
 import { House } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Progress, ProgressLabel } from "@/components/ui/progress"
+import { IconButton } from "@maxhub/max-ui"
+import { Link } from "react-router-dom"
 
 type QuestionHeaderProps = {
   onHome: () => void
@@ -16,24 +17,24 @@ export function QuestionHeader({
   return (
     <header className="space-y-7">
       <div className="flex items-center justify-between gap-4">
-        <div className="relative w-fit pb-3">
-          <p className="font-unbounded text-xl font-semibold tracking-[-0.04em]">
-            МедВедь
-          </p>
-          <span className="absolute top-5 left-20 -rotate-6 font-doctor text-2xl leading-none whitespace-nowrap text-primary">
+        <Link to="/home" className="relative block w-fit shrink-0">
+          <h1 className="relative z-10 font-unbounded text-xl font-semibold tracking-[-0.04em] text-max-text-primary">
+            МедВед
+          </h1>
+
+          <span className="absolute top-4 left-20 z-20 -rotate-6 font-doctor text-2xl leading-none whitespace-nowrap text-max-text-themed">
             Я рядом
           </span>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-lg"
-          className="size-11 rounded-full bg-background hover:bg-background/80"
+        </Link>
+
+        <IconButton
+          size="small"
+          variant="secondary"
           onClick={onHome}
-          aria-label="Вернуться на главную"
+          aria-label="Помощь"
         >
           <House className="size-5" strokeWidth={1.7} />
-        </Button>
+        </IconButton>
       </div>
 
       {questionIndex !== undefined && totalQuestions !== undefined && (

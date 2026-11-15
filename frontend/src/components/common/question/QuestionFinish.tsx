@@ -1,23 +1,14 @@
 import { AlertCircle, AlertTriangle } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
-import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { paymentOptions, type PaymentType } from "@/data/payment.mock"
+import { type PaymentType } from "@/data/payment.mock"
+import { Button, Typography } from "@maxhub/max-ui"
 
 export type Urgency = "emergency" | "urgent" | "planned" | "self_care"
 
@@ -88,16 +79,12 @@ const demoResult: TriageResult = {
     "Это демонстрационный пример оформления результата. Реальная срочность и маршрут обращения должны определяться на основании ответов пациента и проверенных правил маршрутизации.",
 }
 
-export function QuestionFinish({
-  result = demoResult,
-  payment,
-}: QuestionFinishProps) {
+export function QuestionFinish({ result = demoResult }: QuestionFinishProps) {
   const navigate = useNavigate()
   const urgency = urgencyConfig[result.urgency]
-  const paymentOption = paymentOptions.find((option) => option.id === payment)
 
   return (
-    <main className="min-h-dvh bg-muted">
+    <main className="min-h-dvh bg-max-surface">
       <div className="mx-auto w-full max-w-3xl px-5 pt-12 pb-12">
         {/* Заголовок */}
         <header className="mb-5">
@@ -113,76 +100,90 @@ export function QuestionFinish({
             </p>
           </div>
 
-          <p className="mt-2 max-w-md leading-6 text-muted-foreground">
+          <Typography.Text variant="body" color="secondary">
             Мы собрали ваши ответы и подготовили предварительную рекомендацию.
-          </p>
+          </Typography.Text>
         </header>
 
         <div className="space-y-3">
           {/* Срочность */}
-          <Alert
-            className="rounded-3xl"
-            variant={result.urgency == "emergency" ? "destructive" : "default"}
+          <section
+            className={`flex items-start gap-3 rounded-max-medium p-4 ${urgency.className}`}
           >
-            <AlertTriangle />
-            <AlertTitle>
-              Срочность обращения:{" "}
-              <span className="font-semibold">{urgency.label}</span>
-            </AlertTitle>
-            <AlertDescription>{urgency.description}</AlertDescription>
-          </Alert>
+            <AlertTriangle
+              size={20}
+              className={`mt-0.5 shrink-0 ${urgency.iconClassName}`}
+            />
 
-          <Card className="w-full rounded-3xl border ring-0">
-            <CardHeader>
-              <CardTitle className="font-unbounded text-lg">
-                Рекомендации
-              </CardTitle>
-              <CardDescription className="text-[14px] text-foreground">
+            <div className="flex min-w-0 flex-col gap-1">
+              <p className="text-sm font-semibold">
+                Срочность обращения: {urgency.label}
+              </p>
+
+              <p className="text-sm leading-5 opacity-80">
+                {urgency.description}
+              </p>
+
+              {result.urgency === "emergency" && (
+                <a
+                  href="tel:112"
+                  className="rounded-max-button-small mt-4 inline-flex items-center justify-center bg-red-800 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-900"
+                >
+                  Позвонить 112
+                </a>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-max-medium bg-max-card p-5">
+            <Typography.Title className="font-unbounded! text-lg!">
+              Рекомендации
+            </Typography.Title>
+
+            <p className="my-4">
+              <Typography.Text variant="body" color="secondary">
                 {result.recommendation}
-                {paymentOption && result.urgency !== "emergency" && (
-                  <span className="mt-3 block">
-                    {paymentOption.label}: {paymentOption.route}
-                  </span>
-                )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Accordion defaultValue={["plans"]} className={"border-0"}>
-                <AccordionItem value="recommendation">
-                  <AccordionTrigger>О специалисте</AccordionTrigger>
+              </Typography.Text>
+            </p>
+            <Accordion defaultValue={["plans"]} className={"border-0"}>
+              <AccordionItem value="recommendation">
+                <AccordionTrigger>О специалисте</AccordionTrigger>
 
-                  <AccordionContent>
-                    {result.specialistDescription}
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="placen">
-                  <AccordionTrigger>Место обращения</AccordionTrigger>
+                <AccordionContent>
+                  {result.specialistDescription}
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="placen">
+                <AccordionTrigger>Место обращения</AccordionTrigger>
 
-                  <AccordionContent>{result.place}</AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="symptoms">
-                  <AccordionTrigger>Учтённые симптомы</AccordionTrigger>
+                <AccordionContent>{result.place}</AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="symptoms">
+                <AccordionTrigger>Учтённые симптомы</AccordionTrigger>
 
-                  <AccordionContent>
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      {result.symptoms.map((symptom, index) => (
-                        <Badge key={`${symptom}-${index}`}>{symptom}</Badge>
-                      ))}
-                    </div>
-
-                    <p>{result.reason}</p>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-          </Card>
+                <AccordionContent>
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {result.symptoms.map((symptom, index) => (
+                      <span
+                        key={`${symptom}-${index}`}
+                        className="inline-flex items-center rounded-max-medium bg-max-tertiary px-3 py-1.5 text-xs leading-4 font-medium text-max-text-secondary"
+                      >
+                        {symptom}
+                      </span>
+                    ))}
+                  </div>
+                  <p>{result.reason}</p>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </section>
         </div>
 
         {/* Дисклеймер */}
-        <div className="mt-3 flex items-start gap-3 rounded-3xl bg-sky-100 p-4 shadow-2xs">
-          <AlertCircle className="mt-0.5 size-4 shrink-0 text-sky-700" />
+        <div className="mt-3 flex items-start gap-3 rounded-max-medium bg-sky-200/80 p-4">
+          <AlertCircle size={18} className="mt-0.5 shrink-0 text-sky-800" />
 
-          <p className="text-xs leading-5 text-sky-900/80">
+          <p className="text-xs leading-5 text-sky-900">
             Рекомендации МедВед носят информационный характер, не являются
             медицинским диагнозом и не заменяют консультацию врача. При
             ухудшении самочувствия обратитесь за медицинской помощью. При
@@ -191,20 +192,23 @@ export function QuestionFinish({
         </div>
 
         {/* Действия */}
-        <div className="mt-6 flex flex-col gap-1 sm:flex-row">
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
           <Button
             type="button"
+            size="large"
+            variant="primary"
+            stretched
             onClick={() => navigate("/home")}
-            className={"h-12"}
           >
             На главную
           </Button>
 
           <Button
             type="button"
-            variant="outline"
+            size="large"
+            variant="secondary"
+            stretched
             onClick={() => navigate("/question")}
-            className={"h-12"}
           >
             Новое обращение
           </Button>

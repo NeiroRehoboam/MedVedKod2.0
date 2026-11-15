@@ -1,21 +1,6 @@
+
 import { Check, ChevronRight, LockKeyhole } from "lucide-react"
-
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
-
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item"
+import { BottomSheet, Typography } from "@maxhub/max-ui"
 
 import type { Question } from "@/data/questions-patient.mock"
 
@@ -37,89 +22,95 @@ export function AnswersSheet({
   onSelect,
 }: AnswersSheetProps) {
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="max-h-[85dvh] rounded-t-[28px] px-5 pb-8"
-      >
-        <SheetHeader className="px-0">
-          <SheetTitle className="text-left text-xl">Мои ответы</SheetTitle>
+    <BottomSheet
+      open={open}
+      onClose={() => onOpenChange(false)}
+    >
+      <div className="flex max-h-[75dvh] min-h-0 flex-col gap-5">
+        <div className="flex shrink-0 flex-col gap-2 pt-2">
+          <Typography.Title className="font-unbounded!">
+            Мои ответы
+          </Typography.Title>
 
-          <SheetDescription className="text-left">
+          <Typography.Text variant="body" color="secondary">
             Вернитесь к пройденным вопросам, чтобы изменить ответ.
-          </SheetDescription>
-        </SheetHeader>
+          </Typography.Text>
+        </div>
 
-        <div className="mt-4 min-h-0 scrollbar-none space-y-2 overflow-y-auto">
+        <div className="scrollbar-none min-h-0 space-y-2 overflow-y-auto pb-4">
           {questions.map((question, index) => {
-            const answer = question ? answers[question.id] : undefined
+            const answer = answers[question.id]
 
             const isCurrent = index === currentIndex
-            const isCompleted = index < currentIndex && Boolean(answer?.trim())
+            const isCompleted =
+              index < currentIndex && Boolean(answer?.trim())
             const isFuture = index > currentIndex
-
-            const canNavigate = isCompleted && Boolean(question)
+            const canNavigate = isCompleted
 
             return (
-              <Item
-                key={question?.id ?? `future-${index}`}
-                variant="muted"
-                onClick={
+              <button
+                key={question.id}
+                type="button"
+                disabled={!canNavigate}
+                onClick={() => {
+                  onSelect(index)
+                  onOpenChange(false)
+                }}
+                className={`flex w-full items-center gap-3 rounded-max-medium px-4 py-4 text-left transition-colors ${
+                  isCurrent
+                    ? "bg-max-tertiary"
+                    : "bg-max-primary"
+                } ${
                   canNavigate
-                    ? () => {
-                        onSelect(index)
-                        onOpenChange(false)
-                      }
-                    : undefined
-                }
+                    ? "cursor-pointer hover:bg-max-tertiary"
+                    : "cursor-default"
+                }`}
               >
-                <ItemMedia>
-                  <span
-                    className={[
-                      "flex size-9 items-center justify-center rounded-full text-xs font-medium",
-                      isCompleted
-                        ? "bg-foreground/20 text-foreground"
-                        : isCurrent
-                          ? "bg-foreground text-background"
-                          : "bg-foreground/5 text-foreground/50",
-                    ].join(" ")}
-                  >
-                    {isCompleted ? (
-                      <Check className="size-4" />
-                    ) : isFuture ? (
-                      <LockKeyhole className="size-4" />
-                    ) : (
-                      index + 1
-                    )}
-                  </span>
-                </ItemMedia>
+                <div
+                  className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                    isCompleted
+                      ? "bg-max-tertiary text-max-text-primary"
+                      : isCurrent
+                        ? "bg-max-text-primary text-max-text-primary-inverse"
+                        : "bg-max-tertiary text-max-text-tertiary"
+                  }`}
+                >
+                  {isCompleted ? (
+                    <Check size={17} />
+                  ) : isFuture ? (
+                    <LockKeyhole size={16} />
+                  ) : (
+                    index + 1
+                  )}
+                </div>
 
-                <ItemContent>
-                  <ItemTitle className="text-sm leading-5">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="line-clamp-2 text-sm font-medium leading-5 text-max-text-primary">
                     {isFuture
                       ? "Уточняющий вопрос"
-                      : (question?.text ?? "Уточняющий вопрос")}
-                  </ItemTitle>
+                      : question.text}
+                  </div>
 
-                  <ItemDescription className="line-clamp-2 text-xs">
+                  <div className="line-clamp-2 text-xs leading-4 text-max-text-secondary">
                     {isFuture
                       ? "Появится после вашего ответа"
                       : isCurrent
                         ? "Текущий вопрос"
                         : answer || "Нет ответа"}
-                  </ItemDescription>
-                </ItemContent>
+                  </div>
+                </div>
 
                 {canNavigate && (
-                  <ItemActions>
-                    <ChevronRight className="size-4 text-muted-foreground" />
-                  </ItemActions>
+                  <ChevronRight
+                    size={18}
+                    className="shrink-0 text-max-text-secondary"
+                  />
                 )}
-              </Item>
+              </button>
             )
           })}
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </BottomSheet>
   )
 }

@@ -4,7 +4,7 @@ import { BottomNavigation, Header } from "@/components/common"
 export function Layout() {
   return (
     <div className="relative isolate flex min-h-dvh flex-col overflow-x-clip bg-max-surface">
-      <div className="mx-auto w-full max-w-3xl px-6 pt-7">
+      <div className="mx-auto w-full max-w-3xl px-5 pt-5">
         <Header />
       </div>
 

@@ -1,16 +1,9 @@
 import { useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { Button, Typography } from "@maxhub/max-ui"
+import { ArrowLeft, ArrowRight, Check } from "lucide-react"
+
 import { paymentOptions, type PaymentType } from "@/data/payment.mock"
 import { QuestionHeader } from "./QuestionHeader"
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldLabel,
-  FieldTitle,
-} from "@/components/ui/field"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { ArrowLeft, ArrowRight } from "lucide-react"
 
 type QuestionPaymentProps = {
   value: PaymentType | null
@@ -19,6 +12,7 @@ type QuestionPaymentProps = {
   onBack: () => void
   onHome: () => void
 }
+
 export function QuestionPayment({
   value,
   onChange,
@@ -29,59 +23,90 @@ export function QuestionPayment({
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
+
   return (
-    <main className="min-h-dvh bg-muted">
+    <main className="min-h-dvh bg-max-surface">
       <div className="mx-auto max-w-3xl px-5 py-6 sm:px-8">
         <QuestionHeader onHome={onHome} />
-        <h1 className="mt-12 font-unbounded text-2xl leading-snug font-medium">
-          Как вам удобнее обратиться к врачу?
-        </h1>
-        <p className="mt-4 leading-6 text-muted-foreground">
-          Выберите приоритетный тип оплаты. Учтём его в маршруте обращения.
-        </p>
-        <RadioGroup
-          value={value}
-          onValueChange={(nextValue) => {
-            if (nextValue) onChange(nextValue)
-          }}
+
+        <div className="mt-12 flex flex-col gap-4">
+          <h1 className="font-unbounded text-2xl leading-snug font-medium text-max-text-primary">
+            Как вам удобнее обратиться к врачу?
+          </h1>
+
+          <Typography.Text variant="body" color="secondary">
+            Выберите приоритетный тип оплаты. Учтём его в маршруте обращения.
+          </Typography.Text>
+        </div>
+
+        <div
+          role="radiogroup"
           aria-label="Приоритетный тип оплаты"
-          className="my-8"
+          className="my-8 flex flex-col gap-3"
         >
-          {paymentOptions.map((option) => (
-            <FieldLabel key={option.id} htmlFor={`payment-${option.id}`}>
-              <Field orientation="horizontal">
-                <FieldContent>
-                  <FieldTitle>{option.label}</FieldTitle>
-                  <FieldDescription id={`payment-${option.id}-description`}>
+          {paymentOptions.map((option) => {
+            const selected = value === option.id
+
+            return (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => onChange(option.id)}
+                className={`flex w-full items-center justify-between gap-4 rounded-max-medium px-5 py-4 text-left transition-colors ${
+                  selected
+                    ? "bg-max-tertiary"
+                    : "bg-max-secondary hover:bg-max-tertiary"
+                }`}
+              >
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="text-base font-medium text-max-text-primary">
+                    {option.label}
+                  </span>
+
+                  <span className="text-sm leading-5 text-max-text-secondary">
                     {option.description}
-                  </FieldDescription>
-                </FieldContent>
-                <RadioGroupItem
-                  value={option.id}
-                  id={`payment-${option.id}`}
-                  aria-describedby={`payment-${option.id}-description`}
-                />
-              </Field>
-            </FieldLabel>
-          ))}
-        </RadioGroup>
+                  </span>
+                </div>
+
+                <span
+                  className={`flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                    selected
+                      ? "border-max-text-primary bg-max-text-primary text-max-text-primary-inverse"
+                      : "border-max-text-tertiary group-hover:border-max-text-primary"
+                  }`}
+                >
+                  {selected && (
+                    <Check size={14} className="text-white" strokeWidth={3} />
+                  )}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
         <div className="flex gap-2">
           <Button
             type="button"
-            variant="outline"
+            size="large"
+            variant="secondary"
+            iconBefore={<ArrowLeft size={18} />}
             onClick={onBack}
-            className="h-14 px-5"
           >
-            <ArrowLeft className="size-4" />
             Назад
           </Button>
+
           <Button
+            type="button"
+            size="large"
+            variant="primary"
+            className="flex-1"
             disabled={!value}
+            iconAfter={<ArrowRight size={20} />}
             onClick={onContinue}
-            className="h-14 flex-1 justify-between rounded-full px-6"
           >
             Завершить
-            <ArrowRight size={20} />
           </Button>
         </div>
       </div>

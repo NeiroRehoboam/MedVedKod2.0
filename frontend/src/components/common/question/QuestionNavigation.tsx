@@ -1,5 +1,5 @@
+import { Button, IconButton } from "@maxhub/max-ui"
 import { ArrowLeft, ArrowRight, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
 
 type QuestionNavigationProps = {
   canBack: boolean
@@ -24,45 +24,46 @@ export function QuestionNavigation({
     <div className="flex flex-wrap items-center justify-between gap-3">
       <Button
         type="button"
+        size="small"
         variant="ghost"
         onClick={onOpenAnswers}
-        className="h-12 px-4"
       >
         Мои ответы
       </Button>
 
       <div className="ml-auto flex gap-2">
         {canBack && (
-          <Button
+          <IconButton
             type="button"
-            variant="outline"
-            size="icon"
+            variant="secondary"
+            size="medium"
             onClick={onBack}
             aria-label="Предыдущий вопрос"
-            className="size-12 shrink-0 border-border bg-background text-foreground hover:bg-background/80"
           >
             <ArrowLeft className="size-5" strokeWidth={2} />
-          </Button>
+          </IconButton>
         )}
-        <Button
-          type="button"
-          size={isLast ? "default" : "icon"}
-          disabled={!canNext}
-          onClick={onNext}
-          aria-label={
-            canSkip ? "Пропустить" : isLast ? "Завершить" : "Следующий вопрос"
-          }
-          className={isLast ? "h-12 gap-2 px-5" : "size-12"}
-        >
-          {isLast && (canSkip ? "Пропустить" : "Завершить")}
-          {canSkip ? (
-            <ArrowRight size={20} />
-          ) : isLast ? (
-            <Check size={20} />
-          ) : (
-            <ArrowRight size={20} />
-          )}
-        </Button>
+        {canSkip ? (
+          <Button
+            type="button"
+            size="medium"
+            variant="primary"
+            disabled={!canNext}
+            onClick={onNext}
+          >
+            Пропустить
+          </Button>
+        ) : (
+          <IconButton
+            type="button"
+            size="medium"
+            disabled={!canNext}
+            onClick={onNext}
+            aria-label={isLast ? "Завершить" : "Следующий вопрос"}
+          >
+            {isLast ? <Check size={20} /> : <ArrowRight size={20} />}
+          </IconButton>
+        )}
       </div>
     </div>
   )
