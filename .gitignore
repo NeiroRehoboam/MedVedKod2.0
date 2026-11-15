@@ -1,20 +1,20 @@
-# Виртуальное окружение
-backend/venv/
-backend/.venv/
-
-# Переменные окружения с секретами
-backend/.env
-
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
+*.pyc
 .Python
+
+# Виртуальное окружение
+backend/venv/
+venv/
+
+# Переменные окружения
+.env
+!.env.example
 
 # Django
 db.sqlite3
-db.sqlite3-journal
+*.sqlite3
 /staticfiles/
 /media/
 
