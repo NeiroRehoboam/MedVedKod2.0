@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import { Button, Typography } from "@maxhub/max-ui"
+import { cn } from "cn"
 
 import type { Question } from "@/data/questions-patient.mock"
 import { PageDescription } from "../../typography"
@@ -48,27 +49,32 @@ export function QuestionCard({
             </PageDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            {question.options.map((option) => {
-              const selected = answer === option
+            <div className="flex flex-wrap gap-2">
+              {question.options.map((option) => {
+                const selected = answer === option
 
-              return (
-                <Button
-                  key={option}
-                  type="button"
-                  size="small"
-                  variant={selected ? "primary" : "primary-contrast"}
-                  className={
-                    selected
-                      ? ""
-                      : "bg-max-tertiary! text-max-text-primary! hover:bg-max-tertiary/80!"
-                  }
-                  aria-pressed={selected}
-                  onClick={() => onAnswer(option)}
-                >
-                  {option}
-                </Button>
-              )
-            })}
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => onAnswer(option)}
+                    className={cn(
+                      "inline-flex min-h-10 items-center justify-center",
+                      "rounded-max-medium px-4 py-2.5",
+                      "text-sm leading-5 font-normal",
+                      "transition-colors duration-200",
+                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-max-text-themed",
+                      selected
+                        ? "bg-max-text-themed text-white"
+                        : "bg-max-tertiary text-max-text-primary hover:bg-max-tertiary/80"
+                    )}
+                  >
+                    {option}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}
