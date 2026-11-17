@@ -27,7 +27,7 @@ export function InitialPage() {
         >
           <PageTitle className="text-5xl!">
             Привет!
-            <br />Я МедВед
+            <br />Я МедВедь
           </PageTitle>
 
           <DoctorSignature className="ml-20 -rotate-4 text-4xl">
@@ -57,7 +57,7 @@ export function InitialPage() {
 
           <div className="max-w-sm text-center leading-5">
             <PageDescription color="tertiary" variant="description">
-              МедВед не ставит диагноз и не заменяет консультацию врача.
+              МедВедь не ставит диагноз и не заменяет консультацию врача.
             </PageDescription>
           </div>
         </footer>
