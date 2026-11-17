@@ -10,7 +10,7 @@ export const Header = () => {
     <header className="mb-7 flex items-center justify-between gap-4">
       <Link to="/home" className="relative block w-fit shrink-0">
         <h1 className="relative z-10 font-unbounded text-xl font-semibold tracking-[-0.04em] text-max-text-primary">
-          МедВед
+          МедВедь
         </h1>
 
         <DoctorSignature className="absolute top-4 left-20 z-20 -rotate-6">

@@ -140,19 +140,28 @@ export function QuestionFinish({ result = demoResult }: QuestionFinishProps) {
             <PageDescription> {result.recommendation}</PageDescription>
 
             <Accordion defaultValue={["plans"]} className={"border-0"}>
-              <AccordionItem value="recommendation">
+              <AccordionItem
+                value="recommendation"
+                className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
+              >
                 <AccordionTrigger>О специалисте</AccordionTrigger>
 
                 <AccordionContent>
                   {result.specialistDescription}
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="placen">
+              <AccordionItem
+                value="placen"
+                className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
+              >
                 <AccordionTrigger>Место обращения</AccordionTrigger>
 
                 <AccordionContent>{result.place}</AccordionContent>
               </AccordionItem>
-              <AccordionItem value="symptoms">
+              <AccordionItem
+                value="symptoms"
+                className="bg-transparent! data-open:bg-transparent!"
+              >
                 <AccordionTrigger>Учтённые симптомы</AccordionTrigger>
 
                 <AccordionContent>
@@ -181,7 +190,7 @@ export function QuestionFinish({ result = demoResult }: QuestionFinishProps) {
           />
 
           <p className="text-xs leading-5 text-max-text-primary">
-            Рекомендации МедВед носят информационный характер, не являются
+            Рекомендации МедВедь носят информационный характер, не являются
             медицинским диагнозом и не заменяют консультацию врача. При
             ухудшении самочувствия обратитесь за медицинской помощью. При
             признаках угрозы жизни немедленно вызовите скорую помощь.

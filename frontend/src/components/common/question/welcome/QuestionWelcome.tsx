@@ -21,7 +21,7 @@ export function QuestionWelcome({ onStart, onHome }: QuestionWelcomeProps) {
             </PageTitle>
 
             <DoctorSignature className="absolute -right-20 -bottom-6 ml-20 -rotate-5 text-3xl">
-              Я рядом, МедВед
+              Я рядом, МедВедь
             </DoctorSignature>
           </div>
 
@@ -35,7 +35,7 @@ export function QuestionWelcome({ onStart, onHome }: QuestionWelcomeProps) {
 
         {/* Дисклеймер */}
         <div className="space-y-5">
-          <div className="relative rounded-max-medium bg-max-primary p-6 shadow-xl shadow-neutral-200/60 sm:p-8">
+          <div className="relative rounded-max-medium bg-max-primary p-6 shadow-sm sm:p-8">
             <div className="mb-3 flex items-center gap-3 text-max-text-themed!">
               <ShieldCheck className="size-5" strokeWidth={1.8} />
 
@@ -49,7 +49,7 @@ export function QuestionWelcome({ onStart, onHome }: QuestionWelcomeProps) {
             </div>
 
             <PageDescription color="primary" className="text-sm!">
-              МедВед помогает собрать информацию о вашем самочувствии, но не
+              МедВедь помогает собрать информацию о вашем самочувствии, но не
               ставит диагноз, не назначает лечение и не заменяет консультацию
               врача.
             </PageDescription>

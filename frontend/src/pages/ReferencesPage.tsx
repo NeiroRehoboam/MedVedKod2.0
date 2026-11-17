@@ -10,7 +10,6 @@ import { mockQuestions } from "@/data/questions.mock"
 export function ReferencesPage() {
   return (
     <div>
-      {/* Заголовок */}
       <section className="mb-8 space-y-5">
         <PageTitle as="h1">
           Что вас
@@ -24,12 +23,15 @@ export function ReferencesPage() {
         </PageDescription>
       </section>
 
-      {/* Частые вопросы */}
       <section>
-        <Accordion className="rounded-max-medium bg-max-secondary">
+        <Accordion defaultValue={["plans"]} className={"border-0"}>
           {mockQuestions.map((item) => (
-            <AccordionItem key={item.id} value={item.id}>
-              <AccordionTrigger className="text-base">
+            <AccordionItem
+              key={item.id}
+              value={item.id}
+              className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
+            >
+              <AccordionTrigger className="p-0 py-4 text-base font-medium hover:no-underline">
                 {item.question}
               </AccordionTrigger>
 
@@ -37,19 +39,25 @@ export function ReferencesPage() {
             </AccordionItem>
           ))}
 
-          <AccordionItem value="support">
-            <AccordionTrigger className="text-base">
+          <AccordionItem
+            value="support"
+            className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
+          >
+            <AccordionTrigger className="px-0 py-4 text-base font-medium hover:no-underline">
               Остались вопросы?
             </AccordionTrigger>
 
-            <AccordionContent>
+            <AccordionContent className="pb-5 text-max-text-secondary">
               <p>
-                Не нашли нужный ответ? Напишите нам - мы постараемся помочь.
+                Не нашли нужный ответ? Напишите нам — мы постараемся помочь.
               </p>
 
-              <div>
-                <a href="mailto:support@example.com">support@example.com</a>
-              </div>
+              <a
+                href="mailto:support@example.com"
+                className="inline-block text-max-text-themed underline underline-offset-4"
+              >
+                support@example.com
+              </a>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

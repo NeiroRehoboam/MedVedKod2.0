@@ -19,7 +19,7 @@ export function HomeHero({ onNewAppeal }: HomeHeroProps) {
           </PageTitle>
 
           <PageDescription>
-            Расскажите о самочувствии. МедВед задаст несколько вопросов и
+            Расскажите о самочувствии. МедВедь задаст несколько вопросов и
             поможет подготовиться к обращению к врачу.
           </PageDescription>
         </div>

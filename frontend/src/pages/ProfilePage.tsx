@@ -12,7 +12,7 @@ export function ProfilePage() {
         <PageTitle as="h1">Профиль</PageTitle>
 
         <PageDescription>
-          Расскажите о своём здоровье, чтобы МедВед мог учитывать ваши
+          Расскажите о своём здоровье, чтобы МедВедь мог учитывать ваши
           особенности при обращениях.
         </PageDescription>
       </div>

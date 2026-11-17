@@ -38,7 +38,7 @@ export function QuestionStep({ flow, onHome }: QuestionStepProps) {
   } = flow
 
   return (
-    <main className="flex min-h-dvh flex-col">
+    <main className="flex min-h-dvh flex-col max-w-3xl mx-auto">
       <div className="mx-auto flex w-full flex-1 flex-col px-5 pt-6 pb-[max(24px,env(safe-area-inset-bottom))] sm:px-8 sm:pt-8">
         <QuestionHeader
           onHome={onHome}

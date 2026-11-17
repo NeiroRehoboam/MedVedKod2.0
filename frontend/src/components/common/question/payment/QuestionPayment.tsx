@@ -73,11 +73,16 @@ export function QuestionPayment({
                   className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
                     selected
                       ? "border-max-text-primary bg-max-text-primary text-max-text-primary-inverse"
-                      : "border-max-text-tertiary group-hover:border-max-text-primary"
+                      : "border-max-text-tertiary"
                   }`}
                 >
                   {selected && (
-                    <Check size={14} className="text-white" strokeWidth={3} />
+                    <Check
+                      size={14}
+                      className="text-current"
+                      strokeWidth={3}
+                      aria-hidden="true"
+                    />
                   )}
                 </span>
               </button>
