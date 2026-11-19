@@ -1,17 +1,17 @@
 import uuid
 from django.utils import timezone
-from .models import Sessii, VoprosySessii, BystryeOtvety, StatusSessii, IstochnikVoprosa
+from .models import consultations, VoprosySessii, BystryeOtvety, StatusSessii, IstochnikVoprosa
 from patients.models import Patsienty
 from .utils import encrypt_data
 
 class SessionService:
     @staticmethod
-    def start_session(patsient_max_id: str, session_name: str) -> Sessii:
+    def start_session(patsient_max_id: str, session_name: str) -> consultations:
         patsient, _ = Patsienty.objects.get_or_create(
             max_id=patsient_max_id,
             defaults={"id": uuid.uuid4()},
         )
-        return Sessii.objects.create(
+        return consultations.objects.create(
             id=uuid.uuid4(),
             patsient=patsient,
             nazvanie=encrypt_data(session_name),

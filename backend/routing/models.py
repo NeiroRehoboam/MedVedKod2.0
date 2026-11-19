@@ -1,6 +1,6 @@
 import uuid
 from django.db import models
-from sessions.models import Sessii
+from consultations.models import consultations
 from patients.models import SpravochnikSpecialistov
 
 class Srochnost(models.TextChoices):
@@ -11,7 +11,7 @@ class Srochnost(models.TextChoices):
 
 class RezultatyMarshrutizatsii(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    sessiya = models.ForeignKey(Sessii, on_delete=models.CASCADE, db_column="sessiya")
+    sessiya = models.ForeignKey(consultations, on_delete=models.CASCADE, db_column="sessiya")
     srochnost = models.CharField(max_length=50, choices=Srochnost.choices, blank=True, null=True)
     specialist = models.ForeignKey(SpravochnikSpecialistov, on_delete=models.SET_NULL, blank=True, null=True, db_column="specialist")
     obosnovaniye = models.BinaryField(blank=True, null=True)

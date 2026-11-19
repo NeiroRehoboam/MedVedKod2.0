@@ -26,7 +26,7 @@ SET row_security = off;
 CREATE DATABASE med_anamnez_db WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'C.UTF-8';
 
 
-ALTER DATABASE med_anamnez_db OWNER TO postgres;
+ALTER DATABASE med_anamnez_db OWNER TO admin;
 
 \unrestrict mmpl67KLxK3Mg8JdUv7tX5cN98Q0ucfPNgKnR5E2gHpLOCaRNbCcg1D7SebfXCO
 \connect med_anamnez_db

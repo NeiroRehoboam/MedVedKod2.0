@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from sessions.api import StartSessionView, AddQuestionView, AnswerView
+from consultations.api import StartSessionView, AddQuestionView, AnswerView
 
 urlpatterns = [
     path('admin/', admin.site.urls),

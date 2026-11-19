@@ -1,6 +1,18 @@
 version: '3.8'
 
 services:
+
+  db:
+    image: postgres:18-alpine  
+    volumes:
+      - postgres_data:/var/lib/postgresql 
+      - ./backend/med_anamnez_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      - POSTGRES_DB=med_anamnez_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD='qCN$4^yqr?Mc'
+
+  # --- Сервис Django ---
   web:
     build: .
     ports:
@@ -9,3 +21,8 @@ services:
       - ./backend:/app
     env_file:
       - .env
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

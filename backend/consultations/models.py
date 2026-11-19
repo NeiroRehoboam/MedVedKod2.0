@@ -10,7 +10,7 @@ class StatusSessii(models.TextChoices):
     V_PROTSESSE = "В процессе", "В процессе"
     ZAVERSHENA = "Завершена", "Завершена"
 
-class Sessii(models.Model):
+class consultations(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patsient = models.ForeignKey(Patsienty, on_delete=models.CASCADE, db_column="patsient")
     nazvanie = models.BinaryField(blank=True, null=True)
@@ -25,7 +25,7 @@ class Sessii(models.Model):
 
 class VoprosySessii(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    sessiya = models.ForeignKey(Sessii, on_delete=models.CASCADE, db_column="sessiya")
+    sessiya = models.ForeignKey(consultations, on_delete=models.CASCADE, db_column="sessiya")
     tekst_voprosa = models.BinaryField(blank=True, null=True)
     tekst_otveta = models.BinaryField(blank=True, null=True)
     poryadkovyy_nomer = models.IntegerField(blank=True, null=True)
