@@ -24,7 +24,7 @@ export function AnswersSheet({
   return (
     <BottomSheet open={open} onClose={() => onOpenChange(false)}>
       <div className="flex max-h-[75dvh] min-h-0 flex-col gap-5">
-        <div className="flex shrink-0 flex-col gap-2 pt-2">
+        <div className="flex shrink-0 flex-col gap-3 pt-2">
           <PageTitle as="h4">Мои ответы</PageTitle>
 
           <PageDescription>

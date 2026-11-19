@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Textarea } from "@maxhub/max-ui"
 
 import { questions } from "@/data/questions-patient.mock"
@@ -7,17 +7,17 @@ import type { QuestionFlow } from "@/hooks/useQuestionFlow"
 import { AnswersSheet } from "./AnswersSheet"
 import { QuestionCard } from "./QuestionCard"
 import { QuestionEmergencyDialog } from "../emergency/QuestionEmergencyDialog"
-import { QuestionHeader } from "./QuestionHeader"
 import { QuestionNavigation } from "./QuestionNavigation"
 import { PageDescription } from "../../typography"
+import { VoiceInput } from "../../VoiceInput"
 
 type QuestionStepProps = {
   flow: QuestionFlow
-  onHome: () => void
 }
 
-export function QuestionStep({ flow, onHome }: QuestionStepProps) {
-  const [isListening] = useState(false)
+export function QuestionStep({ flow }: QuestionStepProps) {
+  const [isListening, setIsListening] = useState(false)
+  const voiceBaseRef = useRef("")
 
   const {
     index,
@@ -38,14 +38,9 @@ export function QuestionStep({ flow, onHome }: QuestionStepProps) {
   } = flow
 
   return (
-    <main className="flex min-h-dvh flex-col max-w-3xl mx-auto">
-      <div className="mx-auto flex w-full flex-1 flex-col px-5 pt-6 pb-[max(24px,env(safe-area-inset-bottom))] sm:px-8 sm:pt-8">
-        <QuestionHeader
-          onHome={onHome}
-          questionIndex={index}
-          totalQuestions={questions.length}
-        />
-
+    <>
+      <section className="flex min-h-0 w-full flex-1 flex-col">
+        {/* Карточка вопроса */}
         <div className="flex flex-1 flex-col justify-center py-5">
           <QuestionCard
             key={question.id}
@@ -55,7 +50,8 @@ export function QuestionStep({ flow, onHome }: QuestionStepProps) {
           />
         </div>
 
-        <div className="mt-auto space-y-5">
+        {/* Ответ и навигация */}
+        <div className="mt-auto shrink-0 space-y-5">
           <div className="space-y-3">
             <div className="flex flex-wrap items-baseline justify-between gap-1 px-1">
               <label htmlFor="question-answer">
@@ -84,21 +80,41 @@ export function QuestionStep({ flow, onHome }: QuestionStepProps) {
                 className="min-h-30 p-1"
               />
 
-              {/* Здесь позже вернём VoiceInput */}
+              <div className="absolute right-3 bottom-3">
+                <VoiceInput
+                  key={question.id}
+                  onListeningChange={(listening) => {
+                    setIsListening(listening)
+
+                    if (listening) {
+                      voiceBaseRef.current = answer
+                    }
+                  }}
+                  onTranscript={(text) => {
+                    const base = voiceBaseRef.current.trim()
+
+                    updateAnswer([base, text.trim()].filter(Boolean).join(" "))
+                  }}
+                />
+              </div>
             </div>
           </div>
 
           <QuestionNavigation
-            canBack
-            canNext={canNext}
+            canBack={!isListening}
+            canNext={canNext && !isListening}
             isLast={isLast}
             canSkip={Boolean(question.optional && !answer.trim())}
             onBack={handleBack}
             onNext={handleNext}
-            onOpenAnswers={() => setSheetOpen(true)}
+            onOpenAnswers={() => {
+              if (!isListening) {
+                setSheetOpen(true)
+              }
+            }}
           />
         </div>
-      </div>
+      </section>
 
       <AnswersSheet
         open={sheetOpen}
@@ -114,6 +130,6 @@ export function QuestionStep({ flow, onHome }: QuestionStepProps) {
         onOpenChange={setEmergencyOpen}
         onContinue={continueAfterEmergency}
       />
-    </main>
+    </>
   )
 }

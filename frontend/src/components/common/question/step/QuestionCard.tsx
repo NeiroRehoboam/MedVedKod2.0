@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import { Button, Typography } from "@maxhub/max-ui"
+import { Typography } from "@maxhub/max-ui"
 import { cn } from "cn"
 
 import type { Question } from "@/data/questions-patient.mock"

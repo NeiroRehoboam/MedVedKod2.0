@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { BottomSheet, Button, Typography } from "@maxhub/max-ui"
+import { BottomSheet, Button } from "@maxhub/max-ui"
 import { PageDescription, PageTitle } from "../typography"
 
 export function ProfileActions() {
