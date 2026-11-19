@@ -23,7 +23,7 @@ export function AnswersSheet({
 }: AnswersSheetProps) {
   return (
     <BottomSheet open={open} onClose={() => onOpenChange(false)}>
-      <div className="flex max-h-[75dvh] min-h-0 flex-col gap-5">
+      <div className="mx-auto flex max-h-[75dvh] min-h-0 w-full max-w-lg flex-col gap-5">
         <div className="flex shrink-0 flex-col gap-3 pt-2">
           <PageTitle as="h4">Мои ответы</PageTitle>
 

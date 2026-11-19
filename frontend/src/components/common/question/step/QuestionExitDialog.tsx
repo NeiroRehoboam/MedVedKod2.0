@@ -26,7 +26,7 @@ export function QuestionExitSheet({
       }}
       enableDrag={!isSaving}
     >
-      <div className="flex min-h-0 flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
         <div className="flex shrink-0 flex-col gap-3 pt-2">
           <PageTitle as="h4">Завершить диалог?</PageTitle>
           <PageDescription>
@@ -34,7 +34,6 @@ export function QuestionExitSheet({
             без сохранения.
           </PageDescription>
         </div>
-
         <div className="mt-3 flex w-full flex-col gap-2">
           <Button
             size="medium"
@@ -56,7 +55,6 @@ export function QuestionExitSheet({
             Выйти без сохранения
           </Button>
         </div>
-
         {error && (
           <p role="alert" className="mt-4 text-sm text-red-500">
             {error}
