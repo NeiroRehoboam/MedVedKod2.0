@@ -1,8 +1,7 @@
 import { mockUser } from "@/data/user.mock"
 import type { User } from "@/types/user.types"
 
-const USE_MOCK =
-  import.meta.env.DEV && import.meta.env.VITE_MOCK_AUTH === "true"
+const USE_MOCK = import.meta.env.VITE_MOCK_AUTH === "true"
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "")
 
