@@ -1,9 +1,10 @@
 import secrets
 import random
-from argon2 import PasswordHasher #требует установки
+from argon2 import PasswordHasher 
 from argon2.exceptions import VerifyMismatchError
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM #требует установки
 from argon2.low_level import hash_secret_raw, Type
+from django.conf import settings
 
 def derive_key(password: str, salt: bytes) -> bytes:
     key = hash_secret_raw(

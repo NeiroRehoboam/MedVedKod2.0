@@ -21,8 +21,8 @@ INSTALLED_APPS = [
     'rest_framework',
 
     'consultations',
-    'auth_max',
-    'ai_assistant',
+   # 'auth_max',
+    'ai_assis',
     'patients',
     'anamnesis',
     'routing',
