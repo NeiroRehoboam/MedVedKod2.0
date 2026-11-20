@@ -1,0 +1,23 @@
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "medical-rag-module"
+version = "0.1.0"
+description = "Standalone RAG library for medical document retrieval and answer generation"
+requires-python = ">=3.12"
+dependencies = [
+    "qdrant-client",
+    "python-dotenv",
+    "pymupdf",
+    "sentence-transformers",
+    "gigachat",
+    "langchain-text-splitters",
+    "razdel",
+    "transformers",
+]
+
+[tool.setuptools.packages.find]
+include = ["rag_module*"]
