@@ -1,5 +1,7 @@
 export { BottomNavigation } from "./BottomNavigation"
 export { Header } from "./Header"
+export { QuestionHeader } from "./question/step/QuestionHeader"
+export { VoiceInput } from "./VoiceInput"
 export { AnamnesisForm } from "./profile/AnamnesisForm"
 export { ProfileActions } from "./profile/ProfileActions"
 export * from "./typography"

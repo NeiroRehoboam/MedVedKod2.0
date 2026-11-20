@@ -7,7 +7,7 @@ type QuestionActionsProps = {
 
 export function QuestionActions({ onBack }: QuestionActionsProps) {
   return (
-    <div className="flex gap-3 pt-2">
+    <div className="flex gap-2 pt-2">
       <Button
         type="button"
         variant="secondary"

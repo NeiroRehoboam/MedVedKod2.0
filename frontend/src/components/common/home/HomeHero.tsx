@@ -31,7 +31,7 @@ export function HomeHero({ onNewAppeal }: HomeHeroProps) {
             iconAfter={<ArrowUpRight size={20} />}
             onClick={onNewAppeal}
           >
-            Начать разговор
+            Начать диалог
           </Button>
         </div>
       </section>

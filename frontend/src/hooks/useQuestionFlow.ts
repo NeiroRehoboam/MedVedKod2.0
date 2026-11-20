@@ -3,7 +3,11 @@ import { questions } from "@/data/questions-patient.mock"
 import type { PaymentType } from "@/data/payment.mock"
 
 export type QuestionStepType =
-  "welcome" | "anamnesis" | "questions" | "payment" | "finished"
+  | "welcome"
+  | "anamnesis"
+  | "questions"
+  | "payment"
+  | "finished"
 
 export function useQuestionFlow() {
   const [step, setStep] = useState<QuestionStepType>("welcome")
@@ -69,6 +73,16 @@ export function useQuestionFlow() {
     goNext()
   }
 
+  const resetFlow = () => {
+    setStep("welcome")
+    setIndex(0)
+    setAnswers({})
+    setPayment(null)
+    setSheetOpen(false)
+    setEmergencyOpen(false)
+    setEmergencyShown(false)
+  }
+
   return {
     step,
     setStep,
@@ -94,6 +108,8 @@ export function useQuestionFlow() {
     emergencyOpen,
     setEmergencyOpen,
     continueAfterEmergency,
+
+    resetFlow,
   }
 }
 

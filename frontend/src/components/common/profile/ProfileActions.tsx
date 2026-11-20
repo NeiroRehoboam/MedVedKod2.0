@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { BottomSheet, Button, Typography } from "@maxhub/max-ui"
+import { BottomSheet, Button } from "@maxhub/max-ui"
 import { PageDescription, PageTitle } from "../typography"
 
 export function ProfileActions() {
@@ -26,8 +26,8 @@ export function ProfileActions() {
       </Button>
 
       <BottomSheet open={open} onClose={() => setOpen(false)}>
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-3 pt-2 text-center">
+        <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
+          <div className="flex flex-col gap-3 pt-2">
             <PageTitle as="h4">Удалить аккаунт?</PageTitle>
             <PageDescription>
               История обращений и данные анамнеза будут удалены без возможности

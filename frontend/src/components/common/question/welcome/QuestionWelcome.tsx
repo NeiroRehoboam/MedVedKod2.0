@@ -9,8 +9,7 @@ type QuestionWelcomeProps = {
 
 export function QuestionWelcome({ onStart, onHome }: QuestionWelcomeProps) {
   return (
-    <div className="relative flex min-h-dvh flex-col">
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-6 pt-8 pb-[max(24px,env(safe-area-inset-bottom))] sm:px-10 sm:pt-12">
+    <section className="flex min-h-0 w-full flex-1 flex-col">
         {/* Основной контент */}
         <div className="flex flex-1 flex-col justify-center">
           <div className="relative w-fit">
@@ -80,7 +79,6 @@ export function QuestionWelcome({ onStart, onHome }: QuestionWelcomeProps) {
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+    </section>
   )
 }
