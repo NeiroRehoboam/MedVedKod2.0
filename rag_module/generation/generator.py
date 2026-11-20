@@ -1,16 +1,30 @@
-from pathlib import Path
 import json
 import re
+from pathlib import Path
 
 from gigachat import GigaChat
+from gigachat.models import (
+    ChatCompletionRequest,
+    ChatMessage,
+    ChatContentPart,
+    ChatModelOptions,
+    ChatResponseFormat,
+)
+
+from pydantic import ValidationError
 
 from rag_module.config import (
     GIGACHAT_CREDENTIALS,
     GIGACHAT_SCOPE,
-    GIGACHAT_MODEL
+    GIGACHAT_MODEL,
 )
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from rag_module.generation.answer_models import (
+    AnswerPayload,
+    ANSWER_JSON_SCHEMA,
+)
 
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CERT_PATH = PROJECT_ROOT / "certs" / "russian_trusted_root_ca_pem.crt"
 
 def normalize_text(text: str) -> str:
@@ -40,7 +54,7 @@ def normalize_text(text: str) -> str:
 def generate_answer(
     question: str,
     search_results: list[dict]
-) -> str:
+) -> dict:
 
     if not GIGACHAT_CREDENTIALS:
         raise RuntimeError(
@@ -51,10 +65,13 @@ def generate_answer(
         raise ValueError("Вопрос не может быть пустым")
 
     if not search_results:
-        return (
-            "В найденных фрагментах документов "
-            "не обнаружено информации для ответа на вопрос."
-        )
+        return {
+            "claims": [],
+            "insufficient_information": (
+                "В найденных фрагментах документов "
+                "не обнаружено информации для ответа на вопрос."
+            )
+        }
 
     # Оставляем только непустые фрагменты.
     valid_results = [
@@ -64,10 +81,13 @@ def generate_answer(
     ]
 
     if not valid_results:
-        return (
-            "В найденных фрагментах документов "
-            "не обнаружено информации для ответа на вопрос."
-        )
+        return {
+            "claims": [],
+            "insufficient_information": (
+                "В найденных фрагментах документов "
+                "не обнаружено информации для ответа на вопрос."
+            )
+        }
 
     # Формируем контекст.
     context_parts = []
@@ -282,6 +302,26 @@ def generate_answer(
 {question}
 """
 
+   
+    request = ChatCompletionRequest(
+        model=GIGACHAT_MODEL,
+        messages=[
+            ChatMessage(
+                role="user",
+                content=[
+                    ChatContentPart(text=prompt)
+                ]
+            )
+        ],
+        model_options=ChatModelOptions(
+            response_format=ChatResponseFormat(
+                type="json_schema",
+                schema_=ANSWER_JSON_SCHEMA,
+                strict=True,
+            )
+        )
+    )
+
     with GigaChat(
         credentials=GIGACHAT_CREDENTIALS,
         scope=GIGACHAT_SCOPE,
@@ -289,92 +329,46 @@ def generate_answer(
         ca_bundle_file=str(CERT_PATH)
     ) as client:
 
-        response = client.chat.create(prompt)
+        response = client.chat.create(request)
 
-        raw_answer = response.messages[0].content[0].text.strip()
+    if not response.messages:
+        raise RuntimeError(
+            "GigaChat не вернул сообщение."
+        )
 
-    # Убираем Markdown-обрамление, если модель его добавила.
-    raw_answer = re.sub(
-        r"^```(?:json)?\s*|\s*```$",
-        "",
-        raw_answer,
-        flags=re.IGNORECASE
-    ).strip()
+    content = response.messages[0].content
 
-    # Убираем лишние запятые перед закрывающими скобками.
-    # Например: {"source": 4,} -> {"source": 4}
-    raw_answer = re.sub(
-        r",(\s*[}\]])",
-        r"\1",
-        raw_answer
-    )
+    if not content or not content[0].text:
+        raise RuntimeError(
+            "GigaChat вернул пустой ответ."
+        )
 
-    # Разбираем JSON.
+    raw_answer = content[0].text.strip()
+
+    # Проверяем JSON и его структуру через Pydantic.
     try:
         data = json.loads(raw_answer)
+        payload = AnswerPayload.model_validate(data)
 
-    except json.JSONDecodeError as error:
-        print(
-         f"GigaChat вернул некорректный JSON: {error}"
-        )
-
-        return (
-            "Не удалось сформировать ответ из-за ошибки "
-            "формата ответа языковой модели. "
-            "Попробуйте повторить запрос."
-    )
-    
-    if not isinstance(data, dict):
+    except (json.JSONDecodeError, ValidationError) as error:
         raise RuntimeError(
-            "Ответ GigaChat должен быть JSON-объектом."
-        )
+            "GigaChat вернул некорректный JSON ответа."
+        ) from error
 
-    claims = data.get("claims")
-
-    if not isinstance(claims, list):
-        raise RuntimeError(
-            "В ответе GigaChat отсутствует корректный список claims."
-        )
-
-    answer_parts = []
+    verified_claims = []
 
     # Проверяем каждое утверждение и его цитаты.
-    for claim in claims:
+    for claim in payload.claims:
 
-        if not isinstance(claim, dict):
-            continue
+        verified_evidence = []
 
-        claim_text = claim.get("text")
-        evidence = claim.get("evidence")
+        for item in claim.evidence:
 
-        if not isinstance(claim_text, str) or not claim_text.strip():
-            continue
-
-        if not isinstance(evidence, list) or not evidence:
-            continue
-
-        verified_sources = []
-
-        for item in evidence:
-
-            if not isinstance(item, dict):
-                continue
-
-            source_index = item.get("source")
-            quote = item.get("quote")
+            source_index = item.source
+            quote = item.quote
 
             # Проверяем номер источника.
-            if (
-                isinstance(source_index, bool)
-                or not isinstance(source_index, int)
-            ):
-                continue
-
             if source_index < 1 or source_index > len(valid_results):
-                continue
-
-            # Проверяем цитату.
-            if not isinstance(quote, str) or not quote.strip():
                 continue
 
             result = valid_results[source_index - 1]
@@ -382,54 +376,38 @@ def generate_answer(
             original_text = normalize_text(result["text"])
             normalized_quote = normalize_text(quote)
 
-            # Цитата должна дословно присутствовать в источнике
-            # после нормализации пробелов и регистра.
+            # Проверяем длину и наличие цитаты в документе.
             if len(normalized_quote) < 15:
                 continue
 
             if normalized_quote not in original_text:
                 continue
 
-            page = result.get("page", "не указана")
+            # Метаданные добавляет программа, а не GigaChat.
+            verified_evidence.append({
+                "source": source_index,
+                "quote": quote,
+                "title": result.get("title") or "Без названия",
+                "page": result.get("page", "не указана"),
+            })
 
-            reference = (
-                f"Источник {source_index}, стр. {page}"
-            )
+        # Оставляем только утверждения
+        # с хотя бы одной проверенной цитатой.
+        if verified_evidence:
+            verified_claims.append({
+                "text": claim.text,
+                "evidence": verified_evidence,
+            })
 
-            if reference not in verified_sources:
-                verified_sources.append(reference)
+    insufficient_information = payload.insufficient_information
 
-        # Утверждение добавляется только при наличии
-        # хотя бы одной проверенной цитаты.
-        if verified_sources:
-            sources_text = "; ".join(verified_sources)
-
-            answer_parts.append(
-                f"{claim_text.strip()} [{sources_text}]"
-            )
-
-    answer = "\n\n".join(answer_parts)
-
-    # Добавляем информацию о недостатке сведений.
-    insufficient_information = data.get(
-        "insufficient_information",
-        ""
-    )
-
-    if isinstance(insufficient_information, str):
-        if insufficient_information.strip():
-            if answer:
-                answer += "\n\n"
-
-            answer += (
-                "Недостаточно информации: "
-                + insufficient_information.strip()
-            )
-
-    if not answer:
-        return (
-            "Не удалось сформировать ответ с подтверждёнными "
-            "цитатами из найденных фрагментов документов."
+    if not verified_claims and not insufficient_information.strip():
+        insufficient_information = (
+            "Не удалось найти достаточно подтверждённой "
+            "информации для ответа на вопрос."
         )
 
-    return answer
+    return {
+        "claims": verified_claims,
+        "insufficient_information": insufficient_information,
+    }
