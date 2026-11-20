@@ -1,52 +1,20 @@
-import uuid
 from django.db import models
+from consultations.crypto_module import encrypt_string, decrypt_string
 
-class TipAllergii(models.TextChoices):
-    LEKARSTVENNAYA = "Лекарственная", "Лекарственная"
-    PISHCHEVAYA = "Пищевая", "Пищевая"
+class Patient(models.Model):
+    first_name = models.CharField(max_length=100, verbose_name="Имя")
+    last_name = models.CharField(max_length=100, verbose_name="Фамилия")
+    birth_date = models.DateField(verbose_name="Дата рождения")
+    diagnosis_encrypted = models.TextField(blank=True, null=True, verbose_name="Диагноз (зашифрован)")
 
-class SpravochnikAllergenov(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    nazvanie = models.CharField(max_length=200, blank=True, null=True)
-    tip = models.CharField(max_length=50, choices=TipAllergii.choices, blank=True, null=True)
-    aktivno = models.BooleanField(default=True)
+    def save(self, *args, **kwargs):
+        if self.diagnosis_encrypted and not self.diagnosis_encrypted.startswith('gAAAAA'):
+            self.diagnosis_encrypted = encrypt_string(self.diagnosis_encrypted)
+        super().save(*args, **kwargs)
 
-    class Meta:
-        db_table = "spravochnik_allergenov"
-        managed = False
+    @property
+    def diagnosis(self):
+        return decrypt_string(self.diagnosis_encrypted)
 
-class SpravochnikLekarstv(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    nazvanie = models.CharField(max_length=200, blank=True, null=True)
-    aktivno = models.BooleanField(default=True)
-
-    class Meta:
-        db_table = "spravochnik_lekarstv"
-        managed = False
-
-class SpravochnikSpecialistov(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    nazvanie = models.CharField(max_length=150, blank=True, null=True)
-    aktivno = models.BooleanField(default=True)
-
-    class Meta:
-        db_table = "spravochnik_specialistov"
-        managed = False
-
-class SpravochnikZabolevaniy(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    nazvanie = models.CharField(max_length=200, blank=True, null=True)
-    aktivno = models.BooleanField(default=True)
-
-    class Meta:
-        db_table = "spravochnik_zabolevaniy"
-        managed = False
-
-class Patsienty(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    max_id = models.CharField(max_length=64, blank=True, null=True)
-    data_registratsii = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = "patsienty"
-        managed = False
+    def __str__(self):
+        return f"{self.last_name} {self.first_name}"

@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework import serializers
 from django.utils import timezone
 
-from .services import SessionService
+from ..ai_assis.services import SessionService
 from .models import VoprosySessii
 from .utils import encrypt_data
 

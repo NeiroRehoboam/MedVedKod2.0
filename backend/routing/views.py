@@ -1,3 +1,7 @@
-from django.shortcuts import render
+from rest_framework import viewsets
+from .models import Routing
+from .serializers import RoutingSerializer
 
-# Create your views here.
+class RoutingViewSet(viewsets.ModelViewSet):
+    queryset = Routing.objects.all()
+    serializer_class = RoutingSerializer

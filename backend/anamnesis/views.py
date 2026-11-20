@@ -1,3 +1,7 @@
-from django.shortcuts import render
+from rest_framework import viewsets
+from .models import Anamnesis
+from .serializers import AnamnesisSerializer
 
-# Create your views here.
+class AnamnesisViewSet(viewsets.ModelViewSet):
+    queryset = Anamnesis.objects.all()
+    serializer_class = AnamnesisSerializer

@@ -1,8 +1,8 @@
 import uuid
 from django.utils import timezone
-from .models import consultations, VoprosySessii, BystryeOtvety, StatusSessii, IstochnikVoprosa
+from ..consultations.models import consultations, VoprosySessii, BystryeOtvety, StatusSessii, IstochnikVoprosa
 from patients.models import Patsienty
-from .utils import encrypt_data
+from ..consultations.utils import encrypt_data
 
 class SessionService:
     @staticmethod
