@@ -1,0 +1,11 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+      args:
+        VITE_MOCK_AUTH: ${VITE_MOCK_AUTH:-false}
+    container_name: medved_nginx
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:80"
