@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react"
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet"
 
 import type { Question } from "@/data/questions-patient.mock"
-import { PageDescription, PageTitle } from "../../typography"
+import { PageDescription } from "../../typography"
 import {
   AlertDialogDescription,
   AlertDialogTitle,

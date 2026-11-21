@@ -8,7 +8,6 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog"
-import { PageDescription, PageTitle } from "../typography"
 
 export function ProfileActions() {
   const [open, setOpen] = useState(false)
