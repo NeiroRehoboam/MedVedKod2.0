@@ -1,0 +1,21 @@
+import os
+import requests
+
+CORE_BASE_URL = os.getenv('CORE_BASE_URL', 'https://tm-test-yakut.hostco.ru')
+CORE_SERVICE_TOKEN = os.getenv('CORE_SERVICE_TOKEN')
+
+def get_user_by_token(user_jwt: str) -> dict:
+    url = f"{CORE_BASE_URL}/api/v3/users/user-for-external-service"
+    headers = {"Authorization": f"Bearer {CORE_SERVICE_TOKEN}"}
+    params = {"token": user_jwt}
+    response = requests.get(url, headers=headers, params=params, timeout=10)
+
+    if response.status_code == 401:
+        raise ValueError("JWT пустой, битый или просрочен")
+    if response.status_code == 403:
+        raise PermissionError("Сервисный токен неверный или отсутствует")
+    if response.status_code == 404:
+        raise LookupError("Пользователь не найден в Core")
+    if not response.ok:
+        raise RuntimeError(f"Core ответил {response.status_code}: {response.text}")
+    return response.json()
