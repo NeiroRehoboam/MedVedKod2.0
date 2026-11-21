@@ -1,5 +1,12 @@
-import { BottomSheet, Button } from "@maxhub/max-ui"
-import { PageDescription, PageTitle } from "../../typography"
+import { Button } from "@maxhub/max-ui"
+
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 type QuestionExitSheetProps = {
   open: boolean
@@ -18,24 +25,29 @@ export function QuestionExitSheet({
   isSaving = false,
   error,
 }: QuestionExitSheetProps) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && !isSaving) {
+      onClose()
+    }
+  }
+
   return (
-    <BottomSheet
-      open={open}
-      onClose={() => {
-        if (!isSaving) onClose()
-      }}
-      enableDrag={!isSaving}
-    >
-      <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
-        <div className="flex shrink-0 flex-col gap-3 pt-2">
-          <PageTitle as="h4">Завершить диалог?</PageTitle>
-          <PageDescription>
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
+      <AlertDialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-md gap-6 overflow-y-auto rounded-3xl border-0 bg-max-surface p-6">
+        <AlertDialogHeader className="gap-3">
+          <AlertDialogTitle className="text-xl font-semibold tracking-tight text-max-text-primary">
+            Завершить диалог?
+          </AlertDialogTitle>
+
+          <AlertDialogDescription>
             Вы можете сохранить свои ответы и продолжить диалог позже или выйти
             без сохранения.
-          </PageDescription>
-        </div>
-        <div className="mt-3 flex w-full flex-col gap-2">
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <div className="flex w-full flex-col gap-2">
           <Button
+            type="button"
             size="medium"
             variant="primary"
             stretched
@@ -46,6 +58,7 @@ export function QuestionExitSheet({
           </Button>
 
           <Button
+            type="button"
             size="medium"
             variant="secondary"
             stretched
@@ -55,12 +68,13 @@ export function QuestionExitSheet({
             Выйти без сохранения
           </Button>
         </div>
+
         {error && (
-          <p role="alert" className="mt-4 text-sm text-red-500">
+          <p role="alert" className="text-sm text-red-500">
             {error}
           </p>
         )}
-      </div>
-    </BottomSheet>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }

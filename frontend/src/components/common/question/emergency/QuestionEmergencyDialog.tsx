@@ -1,6 +1,13 @@
 import { ArrowUpRight } from "lucide-react"
-import { BottomSheet, Button } from "@maxhub/max-ui"
-import { PageDescription, PageTitle } from "../../typography"
+import { Button } from "@maxhub/max-ui"
+
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 type QuestionEmergencyDialogProps = {
   open: boolean
@@ -14,20 +21,20 @@ export function QuestionEmergencyDialog({
   onContinue,
 }: QuestionEmergencyDialogProps) {
   return (
-    <BottomSheet open={open} onClose={() => onOpenChange(false)}>
-      <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
-        <div className="flex flex-col gap-3 pt-2">
-          <PageTitle as="h3">
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] gap-5 overflow-y-auto rounded-3xl border-0 bg-max-surface p-5 sm:p-6">
+        <AlertDialogHeader className="justify-items-start gap-3 text-left">
+          <AlertDialogTitle className="text-xl font-semibold tracking-tight text-max-text-primary">
             Возможно, нужна
             <br />
             срочная помощь
-          </PageTitle>
+          </AlertDialogTitle>
 
-          <PageDescription>
+          <AlertDialogDescription>
             Вы упомянули боль. При некоторых симптомах важно не откладывать
             обращение за помощью.
-          </PageDescription>
-        </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
 
         <div className="overflow-hidden rounded-max-medium bg-red-100 px-5 py-5">
           <span className="text-xs font-medium text-red-800">
@@ -61,7 +68,7 @@ export function QuestionEmergencyDialog({
         >
           Продолжить опрос
         </Button>
-      </div>
-    </BottomSheet>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }

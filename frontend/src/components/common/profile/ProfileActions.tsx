@@ -1,5 +1,13 @@
 import { useState } from "react"
-import { BottomSheet, Button } from "@maxhub/max-ui"
+import { Button } from "@maxhub/max-ui"
+
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from "@/components/ui/alert-dialog"
 import { PageDescription, PageTitle } from "../typography"
 
 export function ProfileActions() {
@@ -25,29 +33,33 @@ export function ProfileActions() {
         Удалить аккаунт
       </Button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)}>
-        <div className="mx-auto flex w-full max-w-lg flex-col gap-5">
-          <div className="flex flex-col gap-3 pt-2">
-            <PageTitle as="h4">Удалить аккаунт?</PageTitle>
-            <PageDescription>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md gap-6 rounded-3xl border-border bg-max-surface p-6">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-semibold tracking-tight text-max-text-primary">
+              Удалить аккаунт?
+            </AlertDialogTitle>
+
+            <AlertDialogDescription>
               История обращений и данные анамнеза будут удалены без возможности
               восстановления.
-            </PageDescription>
-          </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
           <div className="flex flex-col gap-2">
             <Button
               type="button"
-              size="medium"
+              size="large"
               variant="destructive"
               stretched
               onClick={handleDelete}
             >
               Удалить аккаунт
             </Button>
+
             <Button
               type="button"
-              size="medium"
+              size="large"
               variant="secondary"
               stretched
               onClick={() => setOpen(false)}
@@ -55,8 +67,8 @@ export function ProfileActions() {
               Отмена
             </Button>
           </div>
-        </div>
-      </BottomSheet>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
