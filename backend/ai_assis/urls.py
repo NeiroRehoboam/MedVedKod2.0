@@ -1,7 +1,6 @@
 from django.urls import path
-from .views import StartConsultationView, SendMessageView
-
+from .views import StartSessionView, SendMessageView
 urlpatterns = [
-    path('consultations/start/', StartConsultationView.as_view(), name='start-consultation'),
-    path('consultations/<int:consultation_id>/message/', SendMessageView.as_view(), name='send-message'),
+    path('sessions/start/', StartSessionView.as_view()),
+    path('sessions/<int:session_id>/message/', SendMessageView.as_view()),
 ]

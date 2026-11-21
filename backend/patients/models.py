@@ -1,11 +1,14 @@
 from django.db import models
+from django.conf import settings
 from consultations.crypto_module import encrypt_string, decrypt_string
 
 class Patient(models.Model):
-    first_name = models.CharField(max_length=100, verbose_name="Имя")
-    last_name = models.CharField(max_length=100, verbose_name="Фамилия")
-    birth_date = models.DateField(verbose_name="Дата рождения")
-    diagnosis_encrypted = models.TextField(blank=True, null=True, verbose_name="Диагноз (зашифрован)")
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='patient', null=True, blank=True)
+    first_name = models.CharField(max_length=100, blank=True)
+    last_name = models.CharField(max_length=100, blank=True)
+    birth_date = models.DateField(null=True, blank=True)
+    diagnosis_encrypted = models.TextField(blank=True, null=True)
+    registration_date = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         if self.diagnosis_encrypted and not self.diagnosis_encrypted.startswith('gAAAAA'):

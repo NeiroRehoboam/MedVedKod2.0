@@ -1,7 +1,9 @@
 from rest_framework import viewsets
 from .models import Anamnesis
-from .serializers import AnamnesisSerializer
+from .serializers import FullAnamnesisSerializer
 
 class AnamnesisViewSet(viewsets.ModelViewSet):
-    queryset = Anamnesis.objects.all()
-    serializer_class = AnamnesisSerializer
+    serializer_class = FullAnamnesisSerializer
+
+    def get_queryset(self):
+        return Anamnesis.objects.filter(patient__user=self.request.user)

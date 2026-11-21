@@ -1,50 +1,32 @@
 from django.db import models
 from patients.models import Patient
 
-class Consultation(models.Model):
-    STATUS_CHOICES = [
-        ('active', 'Активна'),
-        ('completed', 'Завершена'),
-        ('emergency', 'Экстренная госпитализация'),
-    ]
-    patient = models.ForeignKey(
-        Patient, on_delete=models.CASCADE,
-        related_name='consultations', verbose_name="Пациент"
-    )
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active', verbose_name="Статус")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создана")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлена")
-    ai_summary = models.TextField(blank=True, null=True, verbose_name="Заключение ИИ")
-    emergency_reason = models.TextField(blank=True, null=True, verbose_name="Причина экстренности")
+class Session(models.Model):
+    class Status(models.TextChoices):
+        IN_PROGRESS = 'IN_PROGRESS', 'В процессе'
+        COMPLETED = 'COMPLETED', 'Завершена'
 
-    class Meta:
-        verbose_name = "Консультация"
-        verbose_name_plural = "Консультации"
-        ordering = ['-created_at']
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='sessions')
+    title = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.IN_PROGRESS)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
 
-    def __str__(self):
-        return f"Консультация #{self.id} — {self.patient}"
+class SessionQuestion(models.Model):
+    class Source(models.TextChoices):
+        SYSTEM = 'SYSTEM', 'Система'
+        AI = 'AI', 'ИИ'
 
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.TextField()
+    answer_text = models.TextField(blank=True, null=True)
+    order_number = models.IntegerField()
+    source = models.CharField(max_length=20, choices=Source.choices, default=Source.AI)
+    created_at = models.DateTimeField(auto_now_add=True)
+    answered_at = models.DateTimeField(null=True, blank=True)
 
-class Message(models.Model):
-    ROLE_CHOICES = [
-        ('user', 'Пользователь'),
-        ('assistant', 'ИИ-ассистент'),
-        ('system', 'Система'),
-    ]
-    consultation = models.ForeignKey(
-        Consultation, on_delete=models.CASCADE,
-        related_name='messages', verbose_name="Консультация"
-    )
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, verbose_name="Роль")
-    content = models.TextField(verbose_name="Текст сообщения")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создано")
-    is_emergency = models.BooleanField(default=False, verbose_name="Экстренный симптом")
-
-    class Meta:
-        verbose_name = "Сообщение"
-        verbose_name_plural = "Сообщения"
-        ordering = ['created_at']
-
-    def __str__(self):
-        return f"{self.role}: {self.content[:50]}..."
+class QuickAnswer(models.Model):
+    question = models.ForeignKey(SessionQuestion, on_delete=models.CASCADE, related_name='quick_answers')
+    text = models.TextField()
+    order_number = models.IntegerField()

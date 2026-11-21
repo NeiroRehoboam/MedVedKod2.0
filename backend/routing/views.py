@@ -1,7 +1,7 @@
 from rest_framework import viewsets
-from .models import Routing
-from .serializers import RoutingSerializer
+from .models import RoutingResult
+from .serializers import RoutingResultSerializer
 
-class RoutingViewSet(viewsets.ModelViewSet):
-    queryset = Routing.objects.all()
-    serializer_class = RoutingSerializer
+class RoutingResultViewSet(viewsets.ModelViewSet):
+    queryset = RoutingResult.objects.all()
+    serializer_class = RoutingResultSerializer

@@ -2,84 +2,57 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
-from .models import Consultation, Message
-from .serializers import SendMessageSerializer, MessageSerializer
+from .models import Session, SessionQuestion
+from .serializers import SendMessageSerializer, SessionSerializer
 from .services import process_user_message
-from patients.models import Patient
 
-
-class StartConsultationView(APIView):
+class StartSessionView(APIView):
     def post(self, request):
-        patient_id = request.data.get('patient_id')
-        if patient_id:
-            patient = get_object_or_404(Patient, id=patient_id)
-        else:
-            patient = Patient.objects.first()
-            if not patient:
-                return Response({'error': 'Сначала создайте пациента'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            patient = request.user.patient
+        except Exception:
+            return Response({'error': 'Нет карты пациента'}, status=status.HTTP_400_BAD_REQUEST)
 
-        consultation = Consultation.objects.create(patient=patient)
-        welcome = Message.objects.create(
-            consultation=consultation,
-            role='assistant',
-            content='Здравствуйте! Опишите, пожалуйста, вашу проблему или симптомы.'
+        session = Session.objects.create(patient=patient)
+        SessionQuestion.objects.create(
+            session=session,
+            question_text='Здравствуйте! Опишите, пожалуйста, вашу проблему.',
+            order_number=1,
+            source=SessionQuestion.Source.SYSTEM
         )
-
-        return Response({
-            'consultation_id': consultation.id,
-            'status': consultation.status,
-            'first_message': MessageSerializer(welcome).data,
-        }, status=status.HTTP_201_CREATED)
-
+        return Response(SessionSerializer(session).data, status=status.HTTP_201_CREATED)
 
 class SendMessageView(APIView):
-    def post(self, request, consultation_id):
-        consultation = get_object_or_404(Consultation, id=consultation_id)
-
-        if consultation.status != 'active':
-            return Response({'error': 'Консультация уже завершена'}, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request, session_id):
+        session = get_object_or_404(Session, id=session_id, patient=request.user.patient)
+        if session.status != Session.Status.IN_PROGRESS:
+            return Response({'error': 'Сессия завершена'}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = SendMessageSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        user_text = serializer.validated_data['content']
-        user_message = Message.objects.create(
-            consultation=consultation, role='user', content=user_text,
-        )
+        # Сохраняем ответ на последний вопрос
+        last_question = session.questions.filter(answer_text__isnull=True).last()
+        if last_question:
+            last_question.answer_text = serializer.validated_data['content']
+            last_question.answered_at = timezone.now()
+            last_question.save()
 
-        history = [
-            {'role': m.role, 'content': m.content}
-            for m in consultation.messages.order_by('created_at')
-        ]
-
+        # ИИ-заглушка
         try:
-            ai_response = process_user_message(consultation, user_text, history)
+            ai_response = process_user_message(session, serializer.validated_data['content'])
         except NotImplementedError as e:
             return Response({'error': str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        ai_message = Message.objects.create(
-            consultation=consultation,
-            role='assistant',
-            content=ai_response['reply'],
-            is_emergency=ai_response['is_emergency'],
+        # Сохраняем вопрос от ИИ (заглушка)
+        SessionQuestion.objects.create(
+            session=session,
+            question_text=ai_response.get('reply', 'Уточните, пожалуйста...'),
+            order_number=session.questions.count() + 1,
+            source=SessionQuestion.Source.AI
         )
-
-        if ai_response['is_emergency']:
-            consultation.status = 'emergency'
-            consultation.emergency_reason = ai_response['emergency_reason']
-            consultation.ai_summary = ai_response['reply']
-            consultation.save()
-        elif ai_response['is_final']:
-            consultation.status = 'completed'
-            consultation.ai_summary = ai_response['reply']
-            consultation.save()
-
-        return Response({
-            'status': 'ok',
-            'user_message': MessageSerializer(user_message).data,
-            'ai_message': MessageSerializer(ai_message).data,
-            'consultation_status': consultation.status,
-            'is_emergency': ai_response['is_emergency'],
-        }, status=status.HTTP_200_OK)
+        
+        return Response(SessionSerializer(session).data)

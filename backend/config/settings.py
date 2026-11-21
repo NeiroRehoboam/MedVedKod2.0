@@ -19,13 +19,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
-    'drf_spectacular',  
+    'rest_framework_simplejwt',
+    'drf_spectacular',
 
-    'consultations',
     'auth_max',
-    'ai_assis',
+    'consultations',
+    'dictionaries',
     'patients',
     'anamnesis',
+    'ai_assis',
     'routing',
 ]
 
@@ -80,19 +82,33 @@ USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- MAX Core ---
 CORE_BASE_URL = os.getenv('CORE_BASE_URL', 'https://tm-test-yakut.hostco.ru')
 CORE_SERVICE_TOKEN = os.getenv('CORE_SERVICE_TOKEN')
 
-# --- REST Framework ---
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-}
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication', # <-- JWT
+        'rest_framework.authentication.SessionAuthentication',        # <-- Сессия (для админки)
+        'rest_framework.authentication.BasicAuthentication',          # <-- Basic Auth (логин/пароль)
+    ],}
 
-# --- Swagger ---
 SPECTACULAR_SETTINGS = {
     'TITLE': 'MedVedKod API',
-    'DESCRIPTION': 'API для медицинского сервиса (пациенты, анамнез, ИИ-ассистент)',
+    'DESCRIPTION': 'API для медицинского сервиса',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'SECURITY': [{'jwtAuth': []}], # <-- Добавить
+    'COMPONENTS': {
+        'securitySchemes': {
+            'jwtAuth': {
+                'type': 'http',
+                'scheme': 'bearer',
+                'bearerFormat': 'JWT',
+            }
+        }
+    }
 }
+
+AUTH_USER_MODEL = 'auth_max.User'

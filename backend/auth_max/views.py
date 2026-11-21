@@ -1,55 +1,39 @@
-import json
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from django.contrib.auth import get_user_model, login
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth import login, logout, get_user_model
 from .core_client import get_user_by_token
+from patients.models import Patient
 
 User = get_user_model()
 
-@csrf_exempt
-@require_POST
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def max_login(request):
-    try:
-        body = json.loads(request.body)
-        user_jwt = body.get('token')
-    except (json.JSONDecodeError, AttributeError):
-        return JsonResponse({'error': 'Неверный формат JSON'}, status=400)
-
+    user_jwt = request.data.get('token')
     if not user_jwt:
-        return JsonResponse({'error': 'Токен не передан'}, status=400)
-
+        return Response({'error': 'Токен не передан'}, status=status.HTTP_400_BAD_REQUEST)
     try:
         profile = get_user_by_token(user_jwt)
-    except ValueError as e:
-        return JsonResponse({'error': str(e)}, status=401)
-    except PermissionError as e:
-        return JsonResponse({'error': str(e)}, status=403)
-    except LookupError as e:
-        return JsonResponse({'error': str(e)}, status=404)
     except Exception as e:
-        return JsonResponse({'error': f'Ошибка Core: {e}'}, status=502)
+        return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
 
     max_id = profile.get('_id')
-    if not max_id:
-        return JsonResponse({'error': 'Core не вернул _id'}, status=502)
-
     full_name = profile.get('full_name', {})
+    
     user, created = User.objects.get_or_create(
-        username=max_id,
-        defaults={
-            'first_name': full_name.get('firstName', ''),
-            'last_name': full_name.get('lastName', ''),
-        },
+        max_id=max_id,
+        defaults={'first_name': full_name.get('firstName', ''), 'last_name': full_name.get('lastName', '')}
     )
+    
+    Patient.objects.get_or_create(user=user)
+    
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    return Response({'status': 'ok', 'user': {'id': user.id, 'max_id': user.max_id}})
 
-    return JsonResponse({
-        'status': 'ok',
-        'user': {
-            'id': user.id,
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-        }
-    })
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def logout_view(request):
+    logout(request)
+    return Response({'status': 'ok'})

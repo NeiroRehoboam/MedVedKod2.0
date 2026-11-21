@@ -1,8 +1,7 @@
 from rest_framework import serializers
-from .models import Routing
+from .models import RoutingResult
 
-class RoutingSerializer(serializers.ModelSerializer):
+class RoutingResultSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Routing
-        fields = ['id', 'patient', 'destination', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        model = RoutingResult
+        fields = '__all__'

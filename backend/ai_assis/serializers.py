@@ -1,20 +1,22 @@
 from rest_framework import serializers
-from .models import Consultation, Message
+from .models import Session, SessionQuestion, QuickAnswer
 
-class MessageSerializer(serializers.ModelSerializer):
+class QuickAnswerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Message
-        fields = ['id', 'role', 'content', 'is_emergency', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        model = QuickAnswer
+        fields = '__all__'
 
-
-class ConsultationSerializer(serializers.ModelSerializer):
-    messages = MessageSerializer(many=True, read_only=True)
+class SessionQuestionSerializer(serializers.ModelSerializer):
+    quick_answers = QuickAnswerSerializer(many=True, read_only=True)
     class Meta:
-        model = Consultation
-        fields = ['id', 'patient', 'status', 'created_at', 'updated_at', 'ai_summary', 'messages']
-        read_only_fields = ['id', 'created_at', 'updated_at', 'ai_summary']
+        model = SessionQuestion
+        fields = '__all__'
 
+class SessionSerializer(serializers.ModelSerializer):
+    questions = SessionQuestionSerializer(many=True, read_only=True)
+    class Meta:
+        model = Session
+        fields = '__all__'
 
 class SendMessageSerializer(serializers.Serializer):
     content = serializers.CharField(max_length=2000)

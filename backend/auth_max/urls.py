@@ -3,4 +3,5 @@ from . import views
 
 urlpatterns = [
     path('max-login/', views.max_login, name='max-login'),
+    path('logout/', views.logout_view),
 ]
