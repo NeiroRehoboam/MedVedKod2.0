@@ -9,7 +9,7 @@ from django.conf import settings
 def derive_key(password: str, salt: bytes) -> bytes:
     key = hash_secret_raw(
         secret=password.encode('utf-8'),
-        salt=salt,  # ← исправлено: было salt_bytes
+        salt=salt,  
         time_cost=3,
         memory_cost=65536,
         parallelism=4,
@@ -72,3 +72,27 @@ def decrypt_data(key: bytes, encrypted_data: bytes) -> bytes:
     plaintext=aesgcm.decrypt(nonce, ciphertext, None)
     return plaintext
 
+import base64
+
+def get_encryption_key() -> bytes:
+    key = settings.SECRET_KEY.encode('utf-8')
+    return key[:32].ljust(32, b'0')
+
+def encrypt_string(text: str) -> str:
+    if not text:
+        return ""
+    key = get_encryption_key()
+    encrypted_bytes = encrypt_data(key, text.encode('utf-8'))
+    return base64.b64encode(encrypted_bytes).decode('utf-8')
+
+def decrypt_string(encrypted_b64: str) -> str:
+    if not encrypted_b64:
+        return ""
+    try:
+        key = get_encryption_key()
+        encrypted_bytes = base64.b64decode(encrypted_b64)
+        decrypted_bytes = decrypt_data(key, encrypted_bytes)
+        return decrypted_bytes.decode('utf-8')
+    except Exception as e:
+        print(f"Ошибка расшифровки: {e}")
+        return ""

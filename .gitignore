@@ -1,29 +1,62 @@
-# Python
+# --- Python ---
 __pycache__/
 *.py[cod]
-*.pyc
+*$py.class
+*.so
 .Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Виртуальное окружение
-backend/venv/
+# --- Виртуальное окружение (venv) ---
 venv/
+.venv/
+env/
+ENV/
+backend/venv/
 
-# Переменные окружения
-.env
-!.env.example
-
-# Django
+# --- Django ---
+*.log
+local_settings.py
 db.sqlite3
-*.sqlite3
+db.sqlite3-journal
 /staticfiles/
 /media/
+.env
+.env.*
+!.env.example
+**/migrations/*.py
+!**/migrations/__init__.py
+.dockerignore
 
-# IDE
+# --- IDE / Редакторы ---
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
-# OS
+# --- ОС ---
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# --- Тесты и кэш ---
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/

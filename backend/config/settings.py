@@ -19,9 +19,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'drf_spectacular',  
 
     'consultations',
-   # 'auth_max',
+    'auth_max',
     'ai_assis',
     'patients',
     'anamnesis',
@@ -57,7 +58,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# --- SQLite ---
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -73,13 +73,26 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = 'ru-ru'
-TIME_ZONE = 'Europe/Moscow'
+TIME_ZONE = 'Asia/Yekaterinburg'
 USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
+# --- MAX Core ---
 CORE_BASE_URL = os.getenv('CORE_BASE_URL', 'https://tm-test-yakut.hostco.ru')
 CORE_SERVICE_TOKEN = os.getenv('CORE_SERVICE_TOKEN')
+
+# --- REST Framework ---
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# --- Swagger ---
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'MedVedKod API',
+    'DESCRIPTION': 'API для медицинского сервиса (пациенты, анамнез, ИИ-ассистент)',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
