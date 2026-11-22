@@ -1,6 +1,9 @@
 from django.db import models
 from patients.models import Patient
-from dictionaries.models import SmokingStatus, MedicalEventType, HereditaryDisease, MedicationReference, AllergyReference
+from dictionaries.models import (
+    SmokingStatus, AlcoholStatus, MedicalEventType, 
+    HereditaryDisease, MedicationReference, AllergyReference
+)
 
 class Anamnesis(models.Model):
     class StatusResponse(models.TextChoices):
@@ -9,14 +12,9 @@ class Anamnesis(models.Model):
         UNKNOWN = 'UNKNOWN', 'Неизвестно'
         NOT_APPLICABLE = 'NA', 'Не применимо'
 
-    class AlcoholStatus(models.TextChoices):
-        NONE = 'NONE', 'Не употребляет'
-        SOMETIMES = 'SOMETIMES', 'Иногда'
-        REGULARLY = 'REGULARLY', 'Регулярно'
-
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='anamnesis')
+    patient = models.OneToOneField(Patient, on_delete=models.CASCADE, related_name='anamnesis')
     smoking_status = models.ForeignKey(SmokingStatus, on_delete=models.SET_NULL, null=True, blank=True)
-    alcohol_status = models.CharField(max_length=20, choices=AlcoholStatus.choices, default=AlcoholStatus.NONE)
+    alcohol_status = models.ForeignKey(AlcoholStatus, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Алкоголь")
     pregnancy = models.CharField(max_length=20, choices=StatusResponse.choices, default=StatusResponse.NOT_APPLICABLE)
     lactation = models.CharField(max_length=20, choices=StatusResponse.choices, default=StatusResponse.NOT_APPLICABLE)
     updated_at = models.DateTimeField(auto_now=True)

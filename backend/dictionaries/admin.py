@@ -1,33 +1,52 @@
 from django.contrib import admin
 from .models import (
-    SmokingStatus, AllergyType, MedicalEventType, 
-    HereditaryDisease, Specialty, AllergyReference, MedicationReference
+    SmokingStatus, AlcoholStatus, AllergyType, MedicalEventType, 
+    HereditaryDisease, Specialty, AllergyReference, MedicationReference,
+    ComplaintCategory
 )
 
 @admin.register(SmokingStatus)
 class SmokingStatusAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'active')
+    list_editable = ('active',)
+
+@admin.register(AlcoholStatus)
+class AlcoholStatusAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'active')
+    list_editable = ('active',)
 
 @admin.register(AllergyType)
 class AllergyTypeAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'active')
+    list_editable = ('active',)
 
 @admin.register(MedicalEventType)
 class MedicalEventTypeAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'active')
+    list_editable = ('active',)
 
 @admin.register(HereditaryDisease)
 class HereditaryDiseaseAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'active')
+    list_editable = ('active',)
 
 @admin.register(Specialty)
 class SpecialtyAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'active')
+    list_editable = ('active',)
 
 @admin.register(AllergyReference)
 class AllergyReferenceAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'active')
+    list_editable = ('active',)
 
 @admin.register(MedicationReference)
 class MedicationReferenceAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'active')
+    list_editable = ('active',)
+
+@admin.register(ComplaintCategory)
+class ComplaintCategoryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'code', 'active')
+    list_editable = ('active',)
+    search_fields = ('name', 'code')

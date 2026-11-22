@@ -3,5 +3,8 @@ from rest_framework.routers import DefaultRouter
 from .views import RoutingResultViewSet
 
 router = DefaultRouter()
-router.register(r'results', RoutingResultViewSet)
-urlpatterns = [path('', include(router.urls))]
+router.register(r'results', RoutingResultViewSet, basename='routing-results')
+
+urlpatterns = [
+    path('', include(router.urls)),
+]

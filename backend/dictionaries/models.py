@@ -5,6 +5,11 @@ class SmokingStatus(models.Model):
     active = models.BooleanField(default=True)
     def __str__(self): return self.name
 
+class AlcoholStatus(models.Model):
+    name = models.CharField(max_length=50)
+    active = models.BooleanField(default=True)
+    def __str__(self): return self.name
+
 class AllergyType(models.Model):
     name = models.CharField(max_length=50)
     active = models.BooleanField(default=True)
@@ -33,4 +38,11 @@ class AllergyReference(models.Model):
 class MedicationReference(models.Model):
     name = models.CharField(max_length=100)
     active = models.BooleanField(default=True)
+    def __str__(self): return self.name
+
+class ComplaintCategory(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Категория жалобы")
+    code = models.CharField(max_length=50, unique=True, verbose_name="Код (латиницей)")
+    active = models.BooleanField(default=True)
+    
     def __str__(self): return self.name

@@ -1,3 +1,8 @@
 from django.contrib import admin
+from .models import RoutingResult
 
-# Register your models here.
+@admin.register(RoutingResult)
+class RoutingResultAdmin(admin.ModelAdmin):
+    list_display = ('id', 'session', 'urgency', 'specialty', 'created_at')
+    list_filter = ('urgency', 'specialty')
+    search_fields = ('justification', 'recommendations')

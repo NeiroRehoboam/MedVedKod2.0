@@ -6,6 +6,9 @@ from django.contrib.auth import login, logout, get_user_model
 from .core_client import get_user_by_token
 from patients.models import Patient
 
+
+
+
 User = get_user_model()
 
 @api_view(['POST'])
