@@ -1,13 +1,8 @@
 from rest_framework import serializers
-from .models import (
-    SmokingStatus, AlcoholStatus, AllergyType, MedicalEventType, 
-    HereditaryDisease, Specialty, AllergyReference, MedicationReference,
-    ComplaintCategory
-)
+from .models import *
 
 class BaseReferenceSerializer(serializers.ModelSerializer):
-    class Meta:
-        fields = ['id', 'name']
+    class Meta: fields = ['id', 'name']
 
 class SmokingStatusSerializer(BaseReferenceSerializer):
     class Meta(BaseReferenceSerializer.Meta): model = SmokingStatus

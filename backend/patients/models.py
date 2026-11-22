@@ -17,7 +17,13 @@ def _decrypt(ciphertext: bytes, key: bytes) -> str:
 
 
 class Patient(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='patient', null=True, blank=True)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='patient', 
+        null=True, 
+        blank=True
+    )
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
     birth_date = models.DateField(null=True, blank=True)

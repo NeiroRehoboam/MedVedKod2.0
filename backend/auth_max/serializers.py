@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-
 User = get_user_model()
+
+class MaxLoginRequestSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True, help_text="JWT из MAX")
 
 class UserProfileSerializer(serializers.ModelSerializer):
     has_patient = serializers.SerializerMethodField()

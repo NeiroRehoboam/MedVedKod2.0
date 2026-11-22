@@ -14,7 +14,7 @@ class Anamnesis(models.Model):
 
     patient = models.OneToOneField(Patient, on_delete=models.CASCADE, related_name='anamnesis')
     smoking_status = models.ForeignKey(SmokingStatus, on_delete=models.SET_NULL, null=True, blank=True)
-    alcohol_status = models.ForeignKey(AlcoholStatus, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Алкоголь")
+    alcohol_status = models.ForeignKey(AlcoholStatus, on_delete=models.SET_NULL, null=True, blank=True)
     pregnancy = models.CharField(max_length=20, choices=StatusResponse.choices, default=StatusResponse.NOT_APPLICABLE)
     lactation = models.CharField(max_length=20, choices=StatusResponse.choices, default=StatusResponse.NOT_APPLICABLE)
     updated_at = models.DateTimeField(auto_now=True)

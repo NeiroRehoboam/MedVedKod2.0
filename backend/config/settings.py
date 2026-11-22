@@ -94,9 +94,9 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication', # <-- JWT
-        'rest_framework.authentication.SessionAuthentication',        # <-- Сессия (для админки)
-        'rest_framework.authentication.BasicAuthentication',          # <-- Basic Auth (логин/пароль)
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',      
+        'rest_framework.authentication.BasicAuthentication',         
     ],}
 
 SPECTACULAR_SETTINGS = {
@@ -104,7 +104,7 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API для медицинского сервиса',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
-    'SECURITY': [{'jwtAuth': []}], # <-- Добавить
+    'SECURITY': [{'jwtAuth': []}], 
     'COMPONENTS': {
         'securitySchemes': {
             'jwtAuth': {

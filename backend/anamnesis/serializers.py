@@ -48,7 +48,6 @@ class FullAnamnesisSerializer(serializers.ModelSerializer):
         meds_data = validated_data.pop('medications', [])
         allergies_data = validated_data.pop('allergies', [])
 
-        # Используем update_or_create, чтобы не падало с UNIQUE constraint
         anamnesis, created = Anamnesis.objects.update_or_create(
             patient=patient,
             defaults=validated_data

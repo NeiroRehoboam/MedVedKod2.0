@@ -4,14 +4,9 @@ from dictionaries.serializers import SpecialtySerializer
 from dictionaries.models import Specialty
 
 class RoutingResultSerializer(serializers.ModelSerializer):
-    # Для чтения (GET): возвращаем словарь с названием специальности
     specialty_detail = SpecialtySerializer(source='specialty', read_only=True)
-    
-    # Для записи (POST): принимаем ID специальности
     specialty = serializers.PrimaryKeyRelatedField(
-        queryset=Specialty.objects.all(), 
-        required=False, 
-        allow_null=True
+        queryset=Specialty.objects.all(), required=False, allow_null=True
     )
 
     class Meta:

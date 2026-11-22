@@ -4,14 +4,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 from django.contrib.auth import login, logout, get_user_model
+from drf_spectacular.utils import extend_schema
 from .core_client import get_user_by_token
 from .key_management import activate_personal_key, clear_personal_key
-from .serializers import UserProfileSerializer
+from .serializers import UserProfileSerializer, MaxLoginRequestSerializer
 from patients.models import Patient
 
 User = get_user_model()
 
-
+@extend_schema(tags=['Auth'], request=MaxLoginRequestSerializer)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def max_login(request):
@@ -61,6 +62,7 @@ def max_login(request):
 
     activate_personal_key(request, user, user_jwt)
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    return Response({'status': 'ok', 'user': {'id': user.id, 'max_id': user.max_id}})
 
     return Response({
         'status': 'ok',
@@ -79,12 +81,10 @@ def max_login(request):
 def logout_view(request):
     clear_personal_key(request)
     logout(request)
-    return Response({'status': 'ok'}, status=status.HTTP_200_OK)
+    return Response({'status': 'ok'})
 
-
+@extend_schema(tags=['Auth'], responses={200: UserProfileSerializer})
 class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]
-
     def get(self, request):
-        serializer = UserProfileSerializer(request.user)
-        return Response(serializer.data)
+        return Response(UserProfileSerializer(request.user).data)

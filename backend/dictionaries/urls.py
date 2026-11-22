@@ -1,11 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import (
-    SmokingStatusViewSet, AlcoholStatusViewSet, AllergyTypeViewSet, 
-    MedicalEventTypeViewSet, HereditaryDiseaseViewSet, SpecialtyViewSet, 
-    AllergyReferenceViewSet, MedicationReferenceViewSet,
-    ComplaintCategoryViewSet
-)
+from .views import *
 
 router = DefaultRouter()
 router.register(r'smoking', SmokingStatusViewSet, basename='smoking')
