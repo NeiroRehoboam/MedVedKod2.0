@@ -38,7 +38,7 @@ export async function getCurrentUser(): Promise<User | null> {
     return authenticated ? mockUser : null
   }
 
-  const response = await fetch(`${API_URL}/api/auth/me`, {
+  const response = await fetch(`${API_URL}/api/auth/me/`, {
     credentials: "include",
   })
 
