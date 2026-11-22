@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from django.contrib.auth import login, logout, get_user_model
 from .core_client import get_user_by_token
+from .key_management import activate_personal_key, clear_personal_key
 from .serializers import UserProfileSerializer
 from patients.models import Patient
 
@@ -26,8 +27,8 @@ def max_login(request):
         return Response({'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
     except LookupError as e:
         return Response({'error': str(e)}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({'error': f'Ошибка Core: {e}'}, status=status.HTTP_502_BAD_GATEWAY)
+    except Exception:
+        return Response({'error': 'Ошибка при обращении к Core'}, status=status.HTTP_502_BAD_GATEWAY)
 
     max_id = profile.get('_id')
     if not max_id:
@@ -58,6 +59,7 @@ def max_login(request):
         }
     )
 
+    activate_personal_key(request, user, user_jwt)
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
     return Response({
@@ -67,13 +69,15 @@ def max_login(request):
             'max_id': user.max_id,
             'first_name': user.first_name,
             'last_name': user.last_name,
-        }
+        },
+        'has_personal_key': user.has_personal_key,
     }, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def logout_view(request):
+    clear_personal_key(request)
     logout(request)
     return Response({'status': 'ok'}, status=status.HTTP_200_OK)
 

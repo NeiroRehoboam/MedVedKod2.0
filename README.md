@@ -145,6 +145,37 @@ key_again = derive_key("MyPass", salt)
 decrypted = decrypt_data(key_again, encrypted)
 ```
 
+#### `generate_salt(size: int = 16) -> bytes`
+
+Генерирует криптостойкую соль размером 16 байт через `secrets.token_bytes()`.
+
+```python
+salt = generate_salt()
+```
+
+#### `derive_key_from_secret(secret: str, salt: bytes, pepper: str = "") -> bytes`
+
+Выводит 32-байтовый ключ из секрета пользователя, соли и серверного pepper через Argon2id (`memory_cost=65536`, `time_cost=3`, `parallelism=4`).
+
+- `secret` — строка-пароль (например, `max_id`, полученный из профиля MAX).
+- `salt` — 16 байт, уникальных для пользователя.
+- `pepper` — серверный секрет из `PERSONAL_DATA_PEPPER` (по умолчанию `SECRET_KEY`).
+
+```python
+salt = generate_salt()
+kek = derive_key_from_secret(user.max_id, salt, settings.PERSONAL_DATA_PEPPER)
+```
+
+### Хранение персональных данных
+
+При входе через MAX (`POST /api/auth/max-login/`) `max_id` из профиля MAX используется как пароль пользователя; сам JWT не сохраняется:
+
+1. Создаётся уникальная соль (`User.personal_salt`) и случайный 32-байтовый ключ данных.
+2. Ключ данных шифруется ключом, выведенным из `max_id`, соли и `PERSONAL_DATA_PEPPER`, и сохраняется в `User.personal_key_encrypted`.
+3. Расшифрованный ключ живёт только в серверной сессии (в зашифрованном виде) и удаляется при logout.
+4. Персональные данные пациента шифруются этим ключом; старые значения, зашифрованные глобальным `SECRET_KEY`, всё ещё читаются.
+5. Запросы с JWT, но без MAX-сессии, не получают доступ к персональным данным (403).
+
 ### Безопасность
 
 - Минимальная длина пароля 8 символов (~97 бит энтропии).

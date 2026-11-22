@@ -84,6 +84,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORE_BASE_URL = os.getenv('CORE_BASE_URL', 'https://tm-test-yakut.hostco.ru')
 CORE_SERVICE_TOKEN = os.getenv('CORE_SERVICE_TOKEN')
+#PERSONAL_DATA_PEPPER = os.getenv('PERSONAL_DATA_PEPPER', SECRET_KEY) не стоит юзать SECRET_KEY
+PERSONAL_DATA_PEPPER = os.environ['PERSONAL_DATA_PEPPER'] 
+
+SESSION_COOKIE_HTTPONLY = True # защищает от атак типа XSS (Cross-Site Scripting)
+SESSION_COOKIE_SAMESITE = 'Lax'#защищает: От атак типа CSRF (Cross-Site Request Forgery / Межсайтовая подделка запроса)
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',

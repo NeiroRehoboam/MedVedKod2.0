@@ -17,7 +17,15 @@ class UserManager(BaseUserManager):
 class User(AbstractUser):
     username = None
     max_id = models.CharField(max_length=64, unique=True, verbose_name="ID в MAX")
+    personal_salt = models.BinaryField(max_length=16, null=True, blank=True, editable=False)
+    personal_key_encrypted = models.BinaryField(null=True, blank=True, editable=False)
+    personal_key_version = models.PositiveIntegerField(default=1, editable=False)
     USERNAME_FIELD = "max_id"
     REQUIRED_FIELDS = []
     objects = UserManager()
+
+    @property
+    def has_personal_key(self):
+        return bool(self.personal_salt and self.personal_key_encrypted)
+
     def __str__(self): return self.max_id

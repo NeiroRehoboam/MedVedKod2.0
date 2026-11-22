@@ -18,6 +18,38 @@ def derive_key(password: str, salt: bytes) -> bytes:
     )
     return key
 
+
+def generate_salt(size: int = 16) -> bytes:
+    if not isinstance(size, int):
+        raise TypeError("size must be int")
+    if size != 16:
+        raise ValueError("salt must be 16 bytes")
+    return secrets.token_bytes(size)
+
+
+def derive_key_from_secret(secret: str, salt: bytes, pepper: str = "") -> bytes:
+    if not isinstance(secret, str):
+        raise TypeError("secret must be str")
+    if not secret:
+        raise ValueError("secret is empty")
+    if not isinstance(salt, (bytes, bytearray)):
+        raise TypeError("salt must be bytes")
+    salt = bytes(salt)
+    if len(salt) != 16:
+        raise ValueError("salt must be 16 bytes")
+    if not isinstance(pepper, str):
+        raise TypeError("pepper must be str")
+    material = f"{secret}:{pepper}".encode('utf-8')
+    return hash_secret_raw(
+        secret=material,
+        salt=salt,
+        time_cost=3,
+        memory_cost=65536,
+        parallelism=4,
+        hash_len=32,
+        type=Type.ID
+    )
+
 LOWER="abcdefghijklmnopqrstuvwxyz"
 UPPER="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 DIGITS="0123456789"
