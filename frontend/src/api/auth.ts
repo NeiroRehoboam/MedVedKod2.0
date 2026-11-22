@@ -17,7 +17,7 @@ export async function loginWithMax(token: string): Promise<void> {
     return
   }
 
-  const response = await fetch(`${API_URL}/api/auth/max`, {
+  const response = await fetch(`${API_URL}/api/auth/max-login/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
