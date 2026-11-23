@@ -1,9 +1,16 @@
+
 import { useEffect, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { loginWithMax } from "@/api/auth"
-import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { Spinner } from "@maxhub/max-ui"
+
+import {
+  loginWithDemo,
+  loginWithMax,
+  USE_MOCK_AUTH,
+} from "@/api/auth"
+
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 
 type AuthGateProps = {
   children: ReactNode
@@ -17,56 +24,82 @@ export function AuthGate({ children }: AuthGateProps) {
     new URLSearchParams(window.location.search).get("token")
   )
 
-  const auth = useMutation({
-    mutationFn: loginWithMax,
+  const needsLogin = USE_MOCK_AUTH || Boolean(token)
 
-    onSuccess: () => {
+  const auth = useMutation({
+    mutationFn: async () => {
+      if (USE_MOCK_AUTH) {
+        await loginWithDemo()
+        return
+      }
+
+      if (token) {
+        await loginWithMax(token)
+      }
+    },
+
+    onSuccess: async () => {
+      // Обновляем информацию о пользователе
       queryClient.removeQueries({
         queryKey: ["currentUser"],
         exact: true,
       })
 
-      const url = new URL(window.location.href)
-      url.searchParams.delete("token")
+      // Удаляем JWT из адресной строки после успешного входа
+      if (!USE_MOCK_AUTH && token) {
+        const url = new URL(window.location.href)
+        url.searchParams.delete("token")
 
-      window.history.replaceState(
-        window.history.state,
-        "",
-        url.pathname + url.search + url.hash
-      )
+        window.history.replaceState(
+          window.history.state,
+          "",
+          url.pathname + url.search + url.hash
+        )
+      }
     },
   })
 
+  const { mutate } = auth
+
   useEffect(() => {
-    if (!token || started.current) return
+    if (!needsLogin || started.current) return
 
     started.current = true
-    auth.mutate(token)
-  }, [token, auth.mutate])
+    mutate()
+  }, [needsLogin, mutate])
 
-  const userQuery = useCurrentUser(!token || auth.isSuccess)
+  const userQuery = useCurrentUser(
+    !needsLogin || auth.isSuccess
+  )
 
-  if (token && !auth.isSuccess && auth.isError) {
-    return (
-      <div>
-        Не удалось авторизоваться. Откройте приложение заново через MAX.
-      </div>
-    )
-  }
+  const isLoading =
+    (needsLogin && !auth.isSuccess && !auth.isError) ||
+    (userQuery.isPending && !userQuery.isError)
 
-  if ((token && !auth.isSuccess) || userQuery.isPending) {
+  if (isLoading) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <Spinner className="size-8" />
       </div>
     )
   }
+
+  if (auth.isError) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center px-6 text-center">
+        {USE_MOCK_AUTH
+          ? "Не удалось войти в деморежим."
+          : "Не удалось авторизоваться через MAX. Откройте приложение заново."}
+      </div>
+    )
+  }
+
   if (userQuery.isError) {
     return <div>Ошибка загрузки пользователя</div>
   }
 
   if (!userQuery.data) {
-    return <div>Откройте сервис из бота</div>
+    return <div>Откройте приложение через MAX</div>
   }
 
   return <>{children}</>

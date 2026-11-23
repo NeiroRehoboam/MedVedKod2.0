@@ -1,37 +1,161 @@
+
 from django.db import models
 from patients.models import Patient
-from dictionaries.models import SmokingStatus, AlcoholStatus, MedicalEventType, HereditaryDisease, MedicationReference, AllergyReference
+from dictionaries.models import (
+    ChronicDisease,
+    HereditaryDisease,
+    MedicationReference,
+    AllergyReference,
+)
+
 
 class Anamnesis(models.Model):
     class StatusResponse(models.TextChoices):
-        YES = 'YES', 'Да'; NO = 'NO', 'Нет'; UNKNOWN = 'UNKNOWN', 'Неизвестно'; NOT_APPLICABLE = 'NA', 'Не применимо'
+        YES = "YES", "Да"
+        NO = "NO", "Нет"
+        UNKNOWN = "UNKNOWN", "Неизвестно"
+        NOT_APPLICABLE = "NA", "Не применимо"
 
-    patient = models.OneToOneField(Patient, on_delete=models.CASCADE, related_name='anamnesis')
-    smoking_status = models.ForeignKey(SmokingStatus, on_delete=models.SET_NULL, null=True, blank=True)
-    alcohol_status = models.ForeignKey(AlcoholStatus, on_delete=models.SET_NULL, null=True, blank=True)
-    pregnancy = models.CharField(max_length=20, choices=StatusResponse.choices, default=StatusResponse.NOT_APPLICABLE)
-    lactation = models.CharField(max_length=20, choices=StatusResponse.choices, default=StatusResponse.NOT_APPLICABLE)
+    class SmokingStatus(models.TextChoices):
+        NEVER = "never", "Не курит"
+        FORMER = "former", "Курил ранее"
+        CURRENT = "current", "Курит"
+
+    class AlcoholStatus(models.TextChoices):
+        NEVER = "never", "Не употребляет"
+        SOMETIMES = "sometimes", "Иногда"
+        REGULARLY = "regularly", "Регулярно"
+
+    patient = models.OneToOneField(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name="anamnesis",
+    )
+
+    # Операции и госпитализации за последний год
+    recent_events_notes = models.TextField(
+        blank=True,
+        default="",
+    )
+
+    pregnancy = models.CharField(
+        max_length=10,
+        choices=StatusResponse.choices,
+        default=StatusResponse.UNKNOWN,
+    )
+
+    lactation = models.CharField(
+        max_length=10,
+        choices=StatusResponse.choices,
+        default=StatusResponse.UNKNOWN,
+    )
+
+    smoking_status = models.CharField(
+        max_length=20,
+        choices=SmokingStatus.choices,
+        null=True,
+        blank=True,
+    )
+
+    alcohol_status = models.CharField(
+        max_length=20,
+        choices=AlcoholStatus.choices,
+        null=True,
+        blank=True,
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
-class MedicalEvent(models.Model):
-    anamnesis = models.ForeignKey(Anamnesis, on_delete=models.CASCADE, related_name='medical_events')
-    event_type = models.ForeignKey(MedicalEventType, on_delete=models.PROTECT)
-    description = models.TextField(blank=True); event_date = models.DateField(null=True, blank=True)
-
-class HereditaryDiseasePatient(models.Model):
-    anamnesis = models.ForeignKey(Anamnesis, on_delete=models.CASCADE, related_name='hereditary_diseases')
-    disease = models.ForeignKey(HereditaryDisease, on_delete=models.PROTECT)
 
 class PatientMedication(models.Model):
     class IntakeMode(models.TextChoices):
-        CONSTANT = 'CONSTANT', 'Постоянно'; AS_NEEDED = 'AS_NEEDED', 'По необходимости'
-    anamnesis = models.ForeignKey(Anamnesis, on_delete=models.CASCADE, related_name='medications')
-    medication = models.ForeignKey(MedicationReference, on_delete=models.PROTECT, null=True, blank=True)
-    custom_name = models.CharField(max_length=200, blank=True, null=True)
-    intake_mode = models.CharField(max_length=20, choices=IntakeMode.choices, default=IntakeMode.AS_NEEDED)
+        CONSTANT = "CONSTANT", "Постоянно"
+        AS_NEEDED = "AS_NEEDED", "По необходимости"
+
+    anamnesis = models.ForeignKey(
+        Anamnesis,
+        on_delete=models.CASCADE,
+        related_name="medications",
+    )
+
+    medication = models.ForeignKey(
+        MedicationReference,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+
+    custom_name = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+    )
+
+    intake_mode = models.CharField(
+        max_length=20,
+        choices=IntakeMode.choices,
+        default=IntakeMode.AS_NEEDED,
+    )
+
 
 class PatientAllergy(models.Model):
-    anamnesis = models.ForeignKey(Anamnesis, on_delete=models.CASCADE, related_name='allergies')
-    allergen = models.ForeignKey(AllergyReference, on_delete=models.PROTECT, null=True, blank=True)
-    custom_name = models.CharField(max_length=200, blank=True, null=True)
-    allergy_type = models.ForeignKey('dictionaries.AllergyType', on_delete=models.PROTECT)
+    anamnesis = models.ForeignKey(
+        Anamnesis,
+        on_delete=models.CASCADE,
+        related_name="allergies",
+    )
+
+    allergen = models.ForeignKey(
+        AllergyReference,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+
+    custom_name = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+    )
+
+
+class HereditaryDiseasePatient(models.Model):
+    anamnesis = models.ForeignKey(
+        Anamnesis,
+        on_delete=models.CASCADE,
+        related_name="hereditary_diseases",
+    )
+
+    disease = models.ForeignKey(
+        HereditaryDisease,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+
+    custom_name = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+    )
+
+
+class PatientChronicDisease(models.Model):
+    anamnesis = models.ForeignKey(
+        Anamnesis,
+        on_delete=models.CASCADE,
+        related_name="chronic_diseases",
+    )
+
+    disease = models.ForeignKey(
+        ChronicDisease,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+
+    custom_name = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+    )
