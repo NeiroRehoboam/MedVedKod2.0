@@ -41,3 +41,8 @@ class ComplaintCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ComplaintCategory
         fields = ['id', 'name', 'code']
+
+
+class PaymentTypeSerializer(BaseReferenceSerializer):
+    class Meta(BaseReferenceSerializer.Meta):
+        model = PaymentType

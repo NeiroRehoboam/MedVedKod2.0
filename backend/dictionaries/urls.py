@@ -18,6 +18,7 @@ router.register(r'medications', MedicationReferenceViewSet,
                 basename='medications')
 router.register(r'complaint-categories', ComplaintCategoryViewSet,
                 basename='complaint-categories')
+router.register(r'payment-types', PaymentTypeViewSet, basename='payment-types')
 
 urlpatterns = [
     path('', include(router.urls)),
