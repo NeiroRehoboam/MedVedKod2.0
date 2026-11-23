@@ -41,6 +41,10 @@ const router = createBrowserRouter([
         path: "/question",
         element: <QuestionPage />,
       },
+      {
+        path: "/question/:sessionId",
+        element: <QuestionPage />,
+      },
     ],
   },
 ])

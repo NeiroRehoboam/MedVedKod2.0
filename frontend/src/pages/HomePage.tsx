@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom"
 import { HomeHero, AppealsHistory } from "@/components/common"
-import { mockAppeals } from "@/data/appeals.mock"
 
 export function HomePage() {
   const navigate = useNavigate()
@@ -10,8 +9,8 @@ export function HomePage() {
   }
 
   const handleAppealClick = (id: string) => {
-    console.log(id)
-    navigate("/question")
+    // console.log(id)
+    navigate(`/question/${id}`)
   }
 
   return (
@@ -19,7 +18,6 @@ export function HomePage() {
       <HomeHero onNewAppeal={handleNewAppeal} />
 
       <AppealsHistory
-        appeals={mockAppeals}
         onNewAppeal={handleNewAppeal}
         onAppealClick={handleAppealClick}
       />

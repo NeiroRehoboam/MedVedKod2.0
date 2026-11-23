@@ -1,3 +1,4 @@
+
 import { Button } from "@maxhub/max-ui"
 
 import {
@@ -11,37 +12,27 @@ import {
 type QuestionExitSheetProps = {
   open: boolean
   onClose: () => void
-  onSave: () => Promise<void>
-  onDiscard: () => void
-  isSaving?: boolean
-  error?: string | null
+  onExit: () => void
 }
 
 export function QuestionExitSheet({
   open,
   onClose,
-  onSave,
-  onDiscard,
-  isSaving = false,
-  error,
+  onExit,
 }: QuestionExitSheetProps) {
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen && !isSaving) {
-      onClose()
-    }
-  }
-
   return (
-    <AlertDialog open={open} onOpenChange={handleOpenChange}>
+    <AlertDialog open={open} onOpenChange={(nextOpen) => {
+      if (!nextOpen) onClose()
+    }}>
       <AlertDialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-md gap-6 overflow-y-auto rounded-3xl border-0 bg-max-surface p-6">
         <AlertDialogHeader className="gap-3">
           <AlertDialogTitle className="text-xl font-semibold tracking-tight text-max-text-primary">
-            Завершить диалог?
+            Выйти из диалога?
           </AlertDialogTitle>
 
           <AlertDialogDescription>
-            Вы можете сохранить свои ответы и продолжить диалог позже или выйти
-            без сохранения.
+            Ваше обращение останется в истории. Вы сможете вернуться к
+            нему позже.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -51,10 +42,9 @@ export function QuestionExitSheet({
             size="medium"
             variant="primary"
             stretched
-            disabled={isSaving}
-            onClick={() => void onSave()}
+            onClick={onExit}
           >
-            {isSaving ? "Сохраняем..." : "Сохранить и выйти"}
+            Выйти
           </Button>
 
           <Button
@@ -62,18 +52,11 @@ export function QuestionExitSheet({
             size="medium"
             variant="secondary"
             stretched
-            disabled={isSaving}
-            onClick={onDiscard}
+            onClick={onClose}
           >
-            Выйти без сохранения
+            Продолжить диалог
           </Button>
         </div>
-
-        {error && (
-          <p role="alert" className="text-sm text-red-500">
-            {error}
-          </p>
-        )}
       </AlertDialogContent>
     </AlertDialog>
   )
