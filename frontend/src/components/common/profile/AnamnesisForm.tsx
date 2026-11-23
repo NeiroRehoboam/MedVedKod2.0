@@ -1,18 +1,8 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { MultiSelectField } from "./MultiSelectField"
-import {
-  emptyAnamnesis,
-  readAnamnesis,
-  type AnamnesisData,
-} from "@/lib/anamnesis"
-import { Button, Select, Spinner, Textarea, useSnackbar } from "@maxhub/max-ui"
+import type { AnamnesisData, SelectFieldKey } from "@/lib/anamnesis"
+import { Button, Select, Spinner, Textarea } from "@maxhub/max-ui"
 import { FormLabel } from "./FormLabel"
-import {
-  useAllergies,
-  useChronicDiseases,
-  useHereditaryDiseases,
-  useMedications,
-} from "@/hooks/useAnamnesisDictionaries"
 import {
   alcoholOptions,
   pregnancyOptions,
@@ -20,24 +10,13 @@ import {
 } from "@/data/anamnesis.options"
 import { MedicationDetailsDialog } from "./MedicationDetailsDialog"
 import { PageDescription } from "../typography"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-
-import { anamnesisAnamnesisCreate } from "@/api/generated/anamnesis/anamnesis"
-import { createAnamnesisPayload } from "@/lib/anamnesisPayload"
-import {
-  currentAnamnesisQueryKey,
-  useCurrentAnamnesis,
-} from "@/hooks/useCurrentAnamnesis"
-import { mapAnamnesisToForm } from "@/lib/anamnesisMapper"
+import { useAnamnesisForm } from "@/hooks/useAnamnesisForm"
 
 type AnamnesisFormProps = {
   children?: ReactNode
   onSuccess?: (data: AnamnesisData) => void
   className?: string
 }
-
-type SelectFieldKey =
-  "pregnancy" | "lactation" | "smoking_status" | "alcohol_status"
 
 const selectFields: {
   key: SelectFieldKey
@@ -71,142 +50,22 @@ export function AnamnesisForm({
   onSuccess,
   className,
 }: AnamnesisFormProps) {
-  const { showSnackbar } = useSnackbar()
-
-  const chronicDiseases = useChronicDiseases()
-  const hereditaryDiseases = useHereditaryDiseases()
-  const allergies = useAllergies()
-  const medications = useMedications()
   const [medicationDialogOpen, setMedicationDialogOpen] = useState(false)
-
-  const queryClient = useQueryClient()
-  const anamnesisQuery = useCurrentAnamnesis()
-
-  const [data, setData] = useState<AnamnesisData>(emptyAnamnesis)
-  const [initialized, setInitialized] = useState(false)
-  const [error, setError] = useState(false)
-  useEffect(() => {
-    if (!anamnesisQuery.isSuccess || initialized) return
-
-    if (anamnesisQuery.data) {
-      setData(mapAnamnesisToForm(anamnesisQuery.data))
-    }
-
-    setInitialized(true)
-  }, [anamnesisQuery.isSuccess, anamnesisQuery.data, initialized])
-  const saveMutation = useMutation({
-    mutationFn: async (formData: AnamnesisData) => {
-      const payload = createAnamnesisPayload(formData)
-
-      return anamnesisAnamnesisCreate(payload)
-    },
-
-    onSuccess: (response, formData) => {
-      queryClient.setQueryData(currentAnamnesisQueryKey, response.data)
-
-      setError(false)
-
-      showSnackbar({
-        text: "Анамнез сохранён",
-        caption: "Ваши данные успешно сохранены",
-        duration: 3000,
-        placement: "top-center",
-        offset: 16,
-      })
-
-      onSuccess?.(formData)
-    },
-
-    onError: (error) => {
-      console.error("Ошибка сохранения анамнеза:", error)
-      setError(true)
-    },
-  })
-
-  const update = <K extends keyof AnamnesisData>(
-    key: K,
-    value: AnamnesisData[K]
-  ) => {
-    setData((prev) => ({ ...prev, [key]: value }))
-    setError(false)
-  }
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
-    if (saveMutation.isPending) return
-
-    setError(false)
-    saveMutation.mutate(data)
-  }
-
-  type DictionaryItem = {
-    id: number
-    name: string
-  }
-
-  const toOptions = (items: DictionaryItem[] = []) =>
-    items.map((item) => ({
-      label: item.name,
-      value: String(item.id),
-    }))
-
-  const medicationOptions = toOptions(medications.data)
-
-  const selectedMedicationValues = data.medications.map((item) => item.value)
-
-  const updateMedications = (values: string[]) => {
-    setData((prev) => ({
-      ...prev,
-      medications: values.map((value) => {
-        const existing = prev.medications.find((item) => item.value === value)
-
-        return (
-          existing ?? {
-            value,
-            intake_mode: "AS_NEEDED" as const,
-          }
-        )
-      }),
-    }))
-
-    setError(false)
-  }
-  const updateSelect = (key: SelectFieldKey, value: string) => {
-    switch (key) {
-      case "pregnancy":
-      case "lactation":
-        if (
-          value === "YES" ||
-          value === "NO" ||
-          value === "UNKNOWN" ||
-          value === "NA"
-        ) {
-          update(key, value)
-        }
-        break
-
-      case "smoking_status":
-        if (value === "never" || value === "former" || value === "current") {
-          update(key, value)
-        } else if (!value) {
-          update(key, null)
-        }
-        break
-
-      case "alcohol_status":
-        if (
-          value === "never" ||
-          value === "sometimes" ||
-          value === "regularly"
-        ) {
-          update(key, value)
-        } else if (!value) {
-          update(key, null)
-        }
-        break
-    }
-  }
+  const {
+    data,
+    initialized,
+    error,
+    anamnesisQuery,
+    chronicDiseases,
+    allergies,
+    hereditaryDiseases,
+    medications,
+    selectedMedicationValues,
+    update,
+    updateMedications,
+    updateSelect,
+    handleSubmit,
+  } = useAnamnesisForm(onSuccess)
 
   if (anamnesisQuery.isPending || !initialized) {
     if (anamnesisQuery.isError) {
@@ -237,7 +96,7 @@ export function AnamnesisForm({
     <form className={className ?? "mt-8 space-y-7"} onSubmit={handleSubmit}>
       <MultiSelectField
         label="Хронические заболевания"
-        options={toOptions(chronicDiseases.data)}
+        options={chronicDiseases.options}
         value={data.diseases}
         onChange={(value) => update("diseases", value)}
         disabled={chronicDiseases.isPending}
@@ -245,7 +104,7 @@ export function AnamnesisForm({
 
       <MultiSelectField
         label="Аллергии"
-        options={toOptions(allergies.data)}
+        options={allergies.options}
         value={data.allergies}
         onChange={(value) => update("allergies", value)}
         disabled={allergies.isPending}
@@ -253,7 +112,7 @@ export function AnamnesisForm({
 
       <MultiSelectField
         label="Наследственные заболевания"
-        options={toOptions(hereditaryDiseases.data)}
+        options={hereditaryDiseases.options}
         value={data.heredity}
         onChange={(value) => update("heredity", value)}
         disabled={hereditaryDiseases.isPending}
@@ -262,7 +121,7 @@ export function AnamnesisForm({
       <div>
         <MultiSelectField
           label="Принимаемые лекарства"
-          options={medicationOptions}
+          options={medications.options}
           value={selectedMedicationValues}
           onChange={updateMedications}
           disabled={medications.isPending}
@@ -283,7 +142,7 @@ export function AnamnesisForm({
           open={medicationDialogOpen}
           onOpenChange={setMedicationDialogOpen}
           medications={data.medications}
-          options={medicationOptions}
+          options={medications.options}
           onChange={(value) => update("medications", value)}
         />
       </div>

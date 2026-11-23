@@ -1,12 +1,23 @@
+import type {
+  AlcoholStatusEnum,
+  FullAnamnesis,
+  FullAnamnesisRequest,
+  IntakeModeEnum,
+  PregnancyEnum,
+  SmokingStatusEnum,
+} from "@/api/generated/models"
 
 export type MedicationEntry = {
   value: string
-  intake_mode: "CONSTANT" | "AS_NEEDED"
+  intake_mode: IntakeModeEnum
 }
 
-export type StatusResponse = "YES" | "NO" | "UNKNOWN" | "NA"
-export type SmokingStatus = "never" | "former" | "current"
-export type AlcoholStatus = "never" | "sometimes" | "regularly"
+export type StatusResponse = PregnancyEnum
+export type SmokingStatus = SmokingStatusEnum
+export type AlcoholStatus = AlcoholStatusEnum
+
+export type SelectFieldKey =
+  "pregnancy" | "lactation" | "smoking_status" | "alcohol_status"
 
 export type AnamnesisData = {
   diseases: string[]
@@ -22,8 +33,6 @@ export type AnamnesisData = {
   smoking_status: SmokingStatus | null
   alcohol_status: AlcoholStatus | null
 }
-
-const STORAGE_KEY = "medved.anamnesis"
 
 export function emptyAnamnesis(): AnamnesisData {
   return {
@@ -42,119 +51,173 @@ export function emptyAnamnesis(): AnamnesisData {
   }
 }
 
-export function readAnamnesis(): AnamnesisData {
+type Reference = {
+  id?: number | null
+  custom_name?: string | null
+}
+
+function toSelectedValue(reference: Reference): string | null {
+  if (reference.id != null) {
+    return String(reference.id)
+  }
+
+  if (reference.custom_name?.trim()) {
+    return `custom:${reference.custom_name.trim()}`
+  }
+
+  return null
+}
+
+export function mapAnamnesisToForm(
+  source: FullAnamnesis
+): AnamnesisData {
   const data = emptyAnamnesis()
 
-  try {
-    const saved: unknown = JSON.parse(
-      localStorage.getItem(STORAGE_KEY) ?? "null"
+  data.diseases = (source.chronic_diseases ?? [])
+    .map((item) =>
+      toSelectedValue({
+        id: item.disease,
+        custom_name: item.custom_name,
+      })
     )
+    .filter((value): value is string => value !== null)
 
-    if (!saved || typeof saved !== "object" || Array.isArray(saved)) {
-      return data
-    }
+  data.heredity = (source.hereditary_diseases ?? [])
+    .map((item) =>
+      toSelectedValue({
+        id: item.disease,
+        custom_name: item.custom_name,
+      })
+    )
+    .filter((value): value is string => value !== null)
 
-    const record = saved as Record<string, unknown>
+  data.allergies = (source.allergies ?? [])
+    .map((item) =>
+      toSelectedValue({
+        id: item.allergen,
+        custom_name: item.custom_name,
+      })
+    )
+    .filter((value): value is string => value !== null)
 
-    // Хронические заболевания, аллергии, наследственность
-    for (const key of ["diseases", "allergies", "heredity"] as const) {
-      const value = record[key]
+  data.medications = (source.medications ?? [])
+    .flatMap((item) => {
+      const value = toSelectedValue({
+        id: item.medication,
+        custom_name: item.custom_name,
+      })
 
-      if (Array.isArray(value)) {
-        data[key] = value.filter(
-          (item): item is string => typeof item === "string"
-        )
-      }
-    }
+      if (!value) return []
 
-    // Лекарства с индивидуальным режимом приёма
-    if (Array.isArray(record.medications)) {
-      data.medications = record.medications.flatMap(
-        (item): MedicationEntry[] => {
-          if (typeof item === "string") {
-            return [
-              { value: item, intake_mode: "AS_NEEDED" },
-            ]
-          }
+      return [{
+        value,
+        intake_mode:
+          item.intake_mode === "CONSTANT"
+            ? "CONSTANT" as const
+            : "AS_NEEDED" as const,
+      }]
+    })
 
-          if (
-            !item ||
-            typeof item !== "object" ||
-            Array.isArray(item)
-          ) {
-            return []
-          }
+  data.recent_events_notes = source.recent_events_notes ?? ""
 
-          const medication = item as Record<string, unknown>
+  if (
+    source.pregnancy === "YES" ||
+    source.pregnancy === "NO" ||
+    source.pregnancy === "UNKNOWN" ||
+    source.pregnancy === "NA"
+  ) {
+    data.pregnancy = source.pregnancy
+  }
 
-          if (typeof medication.value !== "string") {
-            return []
-          }
+  if (
+    source.lactation === "YES" ||
+    source.lactation === "NO" ||
+    source.lactation === "UNKNOWN" ||
+    source.lactation === "NA"
+  ) {
+    data.lactation = source.lactation
+  }
 
-          return [
-            {
-              value: medication.value,
-              intake_mode:
-                medication.intake_mode === "CONSTANT"
-                  ? "CONSTANT"
-                  : "AS_NEEDED",
-            },
-          ]
-        }
-      )
-    }
+  if (
+    source.smoking_status === "never" ||
+    source.smoking_status === "former" ||
+    source.smoking_status === "current"
+  ) {
+    data.smoking_status = source.smoking_status
+  }
 
-    // Операции и госпитализации
-    if (typeof record.recent_events_notes === "string") {
-      data.recent_events_notes = record.recent_events_notes
-    }
-
-    // Беременность и лактация
-    for (const key of ["pregnancy", "lactation"] as const) {
-      const value = record[key]
-
-      if (
-        value === "YES" ||
-        value === "NO" ||
-        value === "UNKNOWN" ||
-        value === "NA"
-      ) {
-        data[key] = value
-      }
-    }
-
-    // Курение
-    const smoking = record.smoking_status
-
-    if (
-      smoking === "never" ||
-      smoking === "former" ||
-      smoking === "current"
-    ) {
-      data.smoking_status = smoking
-    } else if (smoking === null) {
-      data.smoking_status = null
-    }
-
-    // Алкоголь
-    const alcohol = record.alcohol_status
-
-    if (
-      alcohol === "never" ||
-      alcohol === "sometimes" ||
-      alcohol === "regularly"
-    ) {
-      data.alcohol_status = alcohol
-    } else if (alcohol === null) {
-      data.alcohol_status = null
-    }
-  } catch {
-    return data
+  if (
+    source.alcohol_status === "never" ||
+    source.alcohol_status === "sometimes" ||
+    source.alcohol_status === "regularly"
+  ) {
+    data.alcohol_status = source.alcohol_status
   }
 
   return data
 }
 
-export function saveAnamnesis(data: AnamnesisData): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+const CUSTOM_PREFIX = "custom:"
+
+function parseReference(value: string) {
+  if (value.startsWith(CUSTOM_PREFIX)) {
+    return {
+      id: null,
+      custom_name: value.slice(CUSTOM_PREFIX.length),
+    }
+  }
+
+  return {
+    id: Number(value),
+    custom_name: "",
+  }
+}
+
+export function createAnamnesisPayload(data: AnamnesisData): FullAnamnesisRequest {
+  return {
+    smoking_status: data.smoking_status || null,
+    alcohol_status: data.alcohol_status || null,
+
+    pregnancy: data.pregnancy,
+    lactation: data.lactation,
+
+    recent_events_notes: data.recent_events_notes,
+
+    chronic_diseases: data.diseases.map((value) => {
+      const reference = parseReference(value)
+
+      return {
+        disease: reference.id,
+        custom_name: reference.custom_name,
+      }
+    }),
+
+    hereditary_diseases: data.heredity.map((value) => {
+      const reference = parseReference(value)
+
+      return {
+        disease: reference.id,
+        custom_name: reference.custom_name,
+      }
+    }),
+
+    allergies: data.allergies.map((value) => {
+      const reference = parseReference(value)
+
+      return {
+        allergen: reference.id,
+        custom_name: reference.custom_name,
+      }
+    }),
+
+    medications: data.medications.map((item) => {
+      const reference = parseReference(item.value)
+
+      return {
+        medication: reference.id,
+        custom_name: reference.custom_name,
+        intake_mode: item.intake_mode,
+      }
+    }),
+  }
 }

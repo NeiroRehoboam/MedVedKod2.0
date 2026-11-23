@@ -1,4 +1,3 @@
-
 import { Button, Select } from "@maxhub/max-ui"
 
 import {
@@ -47,9 +46,7 @@ export function MedicationDetailsDialog({
   ) => {
     onChange(
       medications.map((item) =>
-        item.value === value
-          ? { ...item, intake_mode: intakeMode }
-          : item
+        item.value === value ? { ...item, intake_mode: intakeMode } : item
       )
     )
   }
@@ -69,21 +66,16 @@ export function MedicationDetailsDialog({
           </AlertDialogHeader>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-2">
+        <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto overscroll-contain px-6 py-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-max-tertiary [&::-webkit-scrollbar-track]:bg-transparent">
+          {" "}
           <div className="space-y-5">
             {medications.map((item, index) => (
               <div
                 key={item.value}
-                className={
-                  index > 0
-                    ? "border-t border-max-tertiary pt-5"
-                    : ""
-                }
+                className={index > 0 ? "border-t border-max-tertiary pt-5" : ""}
               >
                 <div className="mb-2">
-                  <FormLabel>
-                    {getMedicationName(item.value)}
-                  </FormLabel>
+                  <FormLabel>{getMedicationName(item.value)}</FormLabel>
                 </div>
 
                 <Select
