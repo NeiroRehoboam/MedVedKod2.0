@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import {
   aiSessionsList,
+  aiSessionsRetrieve,
   aiSessionsStartCreate,
   getAiSessionsListQueryKey,
+  getAiSessionsRetrieveQueryKey,
 } from "@/api/generated/ai-sessions/ai-sessions"
 
 export function useAiSessions() {
@@ -29,5 +31,18 @@ export function useStartAiSession() {
         queryKey: getAiSessionsListQueryKey(),
       })
     },
+  })
+}
+
+export function useAiSession(id?: string) {
+  return useQuery({
+    queryKey: getAiSessionsRetrieveQueryKey(id ?? ""),
+    queryFn: async () => {
+      const response = await aiSessionsRetrieve(id!)
+      return response.data
+    },
+    enabled: Boolean(id),
+    retry: 1,
+    staleTime: 60_000,
   })
 }
