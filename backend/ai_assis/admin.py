@@ -1,3 +1,14 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import BaseQuestion, BaseQuestionOption
+
+
+class BaseQuestionOptionInline(admin.TabularInline):
+    model = BaseQuestionOption
+    extra = 1
+    fields = ("text", "order")
+
+
+@admin.register(BaseQuestion)
+class BaseQuestionAdmin(admin.ModelAdmin):
+    inlines = [BaseQuestionOptionInline]
