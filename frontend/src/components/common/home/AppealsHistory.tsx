@@ -1,30 +1,64 @@
-import { mockAppeals } from "@/data/appeals.mock"
+import type { ComponentProps } from "react"
+import { Spinner } from "@maxhub/max-ui"
+
+import { useAiSessions } from "@/hooks/useAiSessions"
 import { AppealItem } from "./AppealItem"
 import { EmptyAppeals } from "./EmptyAppeals"
 import { PageTitle } from "../typography"
 
-type Appeal = (typeof mockAppeals)[number]
+type Appeal = ComponentProps<typeof AppealItem>["appeal"]
 
 type AppealsHistoryProps = {
-  appeals: readonly Appeal[]
   onNewAppeal: () => void
   onAppealClick: (id: Appeal["id"]) => void
 }
 
 export function AppealsHistory({
-  appeals,
   onNewAppeal,
   onAppealClick,
 }: AppealsHistoryProps) {
+  const sessionsQuery = useAiSessions()
+
+  const appeals: Appeal[] = (sessionsQuery.data ?? []).map((session) => ({
+    id: String(session.id),
+
+    title: session.title || "Новое обращение",
+
+    date: session.created_at
+      ? new Intl.DateTimeFormat("ru-RU", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }).format(new Date(session.created_at))
+      : "Дата не указана",
+
+    status: session.status === "COMPLETED" ? "completed" : "in_progress",
+  }))
   return (
     <section className="mt-10">
       <div className="mb-5">
-        <PageTitle as="h3">
-          Мои обращения
-        </PageTitle>
+        <PageTitle as="h3">Мои обращения</PageTitle>
       </div>
 
-      {appeals.length > 0 ? (
+      {sessionsQuery.isPending ? (
+        <div className="flex justify-center py-12">
+          <Spinner className="size-7" />
+        </div>
+      ) : sessionsQuery.isError ? (
+        <div className="py-8 text-center">
+          <p className="text-sm text-max-text-secondary">
+            Не удалось загрузить обращения
+          </p>
+
+          <button
+            type="button"
+            onClick={() => sessionsQuery.refetch()}
+            className="mt-3 text-sm font-medium text-max-text-primary underline underline-offset-4"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      ) : appeals.length > 0 ? (
         <div className="flex flex-col gap-2.5">
           {appeals.map((appeal) => (
             <AppealItem
