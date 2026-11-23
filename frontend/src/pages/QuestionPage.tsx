@@ -10,23 +10,36 @@ import {
 } from "@/components/common"
 
 import { useQuestionFlow } from "@/hooks/useQuestionFlow"
+import { useStartAiSession } from "@/hooks/useAiSessions"
 import { questions } from "@/data/questions-patient.mock"
+import { useRef } from "react"
 
 export function QuestionPage() {
   const navigate = useNavigate()
   const flow = useQuestionFlow()
+  const startSession = useStartAiSession()
 
   const goHome = () => navigate("/home")
 
-  const handleDiscardAndExit = () => {
-    flow.resetFlow()
-    goHome()
-  }
+  const sessionIdRef = useRef<number | null>(null)
 
-  const handleSaveAndExit = async () => {
-    throw new Error("Сохранение пока недоступно")
-  }
+  const handleAnamnesisContinue = async () => {
+    if (startSession.isPending) return
 
+    if (sessionIdRef.current !== null) {
+      flow.setStep("questions")
+      return
+    }
+
+    try {
+      const response = await startSession.mutateAsync()
+
+      sessionIdRef.current = response.data.id
+      flow.setStep("questions")
+    } catch (error) {
+      console.error("Не удалось создать сессию:", error)
+    }
+  }
   const renderStep = () => {
     switch (flow.step) {
       case "welcome":
@@ -40,7 +53,7 @@ export function QuestionPage() {
       case "anamnesis":
         return (
           <QuestionAnamnesis
-            onContinue={() => flow.setStep("questions")}
+            onContinue={handleAnamnesisContinue}
             onBack={() => flow.setStep("welcome")}
           />
         )
@@ -71,9 +84,7 @@ export function QuestionPage() {
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col px-5 pt-6 pb-[max(24px,env(safe-area-inset-bottom))] sm:px-8 sm:pt-8">
       {flow.step !== "welcome" && flow.step !== "finished" && (
         <QuestionHeader
-          onHome={goHome}
-          onDiscardAndExit={handleDiscardAndExit}
-          onSaveAndExit={handleSaveAndExit}
+          onExit={goHome}
           questionIndex={flow.step === "questions" ? flow.index : undefined}
           totalQuestions={
             flow.step === "questions" ? questions.length : undefined
