@@ -14,5 +14,4 @@ export interface Patient {
   last_name?: string;
   /** @nullable */
   birth_date?: string | null;
-  diagnosis?: string;
 }

@@ -1,71 +1,120 @@
 import { useMemo, useState } from "react"
 import { Check, Plus, Search, X } from "lucide-react"
 import { Button, Input, Select } from "@maxhub/max-ui"
+import type { ReactNode } from "react"
 import { FormLabel } from "./FormLabel"
 import { PageDescription } from "../typography"
 
-type Props = {
+type Option = {
   label: string
-  options: string[]
-  value: string[]
-  onChange: (value: string[]) => void
+  value: string
 }
 
-export function MultiSelectField({ label, options, value, onChange }: Props) {
+type Props = {
+  label: string
+  options: Option[]
+  value: string[]
+  onChange: (value: string[]) => void
+  disabled?: boolean
+  action?: ReactNode
+}
+
+const CUSTOM_PREFIX = "custom:"
+
+export function MultiSelectField({
+  label,
+  options,
+  value,
+  onChange,
+  disabled = false,
+  action,
+}: Props) {
   const [search, setSearch] = useState("")
-  const [customOptions, setCustomOptions] = useState<string[]>([])
 
-  const allOptions = useMemo(
-    () => [...new Set([...options, ...customOptions, ...value])],
-    [options, customOptions, value]
+  const allOptions = useMemo(() => {
+    const available = new Map<string, Option>()
+
+    for (const option of options) {
+      available.set(option.value, option)
+    }
+
+    for (const selected of value) {
+      if (available.has(selected)) continue
+
+      if (selected.startsWith(CUSTOM_PREFIX)) {
+        available.set(selected, {
+          value: selected,
+          label: selected.slice(CUSTOM_PREFIX.length),
+        })
+      }
+    }
+
+    return [...available.values()]
+  }, [options, value])
+
+  const filteredOptions = useMemo(
+    () =>
+      allOptions.filter((option) =>
+        option.label.toLowerCase().includes(search.trim().toLowerCase())
+      ),
+    [allOptions, search]
   )
 
-  const filteredOptions = allOptions.filter((item) =>
-    item.toLowerCase().includes(search.trim().toLowerCase())
-  )
+  const getLabel = (selectedValue: string) => {
+    const option = allOptions.find((item) => item.value === selectedValue)
+
+    return (
+      option?.label ??
+      (selectedValue.startsWith(CUSTOM_PREFIX)
+        ? selectedValue.slice(CUSTOM_PREFIX.length)
+        : selectedValue)
+    )
+  }
+
+  const toggle = (selectedValue: string) => {
+    if (value.includes(selectedValue)) {
+      onChange(value.filter((item) => item !== selectedValue))
+    } else {
+      onChange([...value, selectedValue])
+    }
+  }
 
   const addCustom = () => {
     const text = search.trim()
+
     if (!text) return
 
     const existing = allOptions.find(
-      (item) => item.toLowerCase() === text.toLowerCase()
+      (option) => option.label.toLowerCase() === text.toLowerCase()
     )
 
     if (existing) {
-      if (!value.includes(existing)) {
-        onChange([...value, existing])
+      if (!value.includes(existing.value)) {
+        onChange([...value, existing.value])
       }
     } else {
-      setCustomOptions((prev) => [...prev, text])
-      onChange([...value, text])
+      const customValue = `${CUSTOM_PREFIX}${text}`
+
+      if (!value.includes(customValue)) {
+        onChange([...value, customValue])
+      }
     }
 
     setSearch("")
   }
 
-  const toggle = (item: string) => {
-    if (value.includes(item)) {
-      onChange(value.filter((v) => v !== item))
-    } else {
-      onChange([...value, item])
-    }
-  }
-
-  const selectOptions = allOptions.map((item) => ({
-    label: item,
-    value: item,
-  }))
-
   const canAddCustom =
     search.trim().length > 0 &&
     !allOptions.some(
-      (item) => item.toLowerCase() === search.trim().toLowerCase()
+      (option) => option.label.toLowerCase() === search.trim().toLowerCase()
     )
 
   return (
     <div>
-      <FormLabel htmlFor="multi-select">{label}</FormLabel>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <FormLabel>{label}</FormLabel>
+        {action}
+      </div>
 
       <Select
         aria-label={label}
@@ -73,10 +122,11 @@ export function MultiSelectField({ label, options, value, onChange }: Props) {
         size="large"
         placeholder="Выбрать или добавить"
         value={value}
-        options={selectOptions}
+        options={allOptions}
         onValueChange={(next: string[]) => onChange(next)}
         dropdownWidth="trigger"
         withClearButton
+        disabled={disabled}
         customDropdownMenu={
           <div className="custom-select-menu flex flex-col">
             <div className="pb-2">
@@ -98,20 +148,20 @@ export function MultiSelectField({ label, options, value, onChange }: Props) {
             </div>
 
             <div className="max-h-56 overflow-y-auto">
-              {filteredOptions.map((item) => {
-                const selected = value.includes(item)
+              {filteredOptions.map((option) => {
+                const selected = value.includes(option.value)
 
                 return (
                   <button
-                    key={item}
+                    key={option.value}
                     type="button"
-                    onClick={() => toggle(item)}
+                    onClick={() => toggle(option.value)}
                     aria-pressed={selected}
                     className={`flex min-h-11 w-full items-center justify-between rounded-max-small px-3 text-left text-sm transition-colors ${
-                      selected && "bg-max-tertiary"
+                      selected ? "bg-max-tertiary" : ""
                     }`}
                   >
-                    {item}
+                    <span>{option.label}</span>
 
                     {selected && (
                       <Check size={15} className="text-max-text-primary" />
@@ -130,15 +180,11 @@ export function MultiSelectField({ label, options, value, onChange }: Props) {
             {canAddCustom && (
               <div className="border-t border-max-tertiary p-2">
                 <Button
-                  disabled={false}
-                  iconAfter={false}
+                  type="button"
                   iconBefore={<Plus size={15} />}
-                  loading={false}
                   size="xsmall"
-                  stretched={false}
                   variant="ghost"
                   className="w-full"
-
                   onClick={addCustom}
                 >
                   Добавить «{search.trim()}»
@@ -150,23 +196,30 @@ export function MultiSelectField({ label, options, value, onChange }: Props) {
       />
 
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          {value.map((item) => (
-            <div
-              key={item}
-              className="inline-flex items-center gap-1 rounded-max-small bg-max-tertiary py-1 pr-1 pl-2"
-            >
-              <p>{item}</p>
-              <button
-                type="button"
-                aria-label={`Удалить ${item}`}
-                onClick={() => onChange(value.filter((v) => v !== item))}
-                className="rounded-max-button-xsmall flex size-7 shrink-0 items-center justify-center text-max-text-secondary transition-colors hover:bg-max-secondary hover:text-max-text-primary"
+        <div className="mt-3 flex flex-wrap gap-2">
+          {value.map((selectedValue) => {
+            const label = getLabel(selectedValue)
+
+            return (
+              <div
+                key={selectedValue}
+                className="inline-flex items-center gap-1 rounded-max-small bg-max-tertiary py-1 pr-1 pl-2"
               >
-                <X size={15} />
-              </button>
-            </div>
-          ))}
+                <p>{label}</p>
+
+                <button
+                  type="button"
+                  aria-label={`Удалить ${label}`}
+                  onClick={() =>
+                    onChange(value.filter((item) => item !== selectedValue))
+                  }
+                  className="rounded-max-button-xsmall flex size-7 shrink-0 items-center justify-center text-max-text-secondary transition-colors hover:bg-max-secondary hover:text-max-text-primary"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

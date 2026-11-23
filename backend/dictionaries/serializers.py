@@ -32,6 +32,11 @@ class MedicationReferenceSerializer(BaseReferenceSerializer):
         model = MedicationReference
 
 
+class ChronicDiseaseSerializer(BaseReferenceSerializer):
+    class Meta(BaseReferenceSerializer.Meta):
+        model = ChronicDisease
+
+
 class ComplaintCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ComplaintCategory

@@ -38,3 +38,9 @@ class MedicationReferenceViewSet(viewsets.ReadOnlyModelViewSet):
 class ComplaintCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ComplaintCategory.objects.filter(active=True)
     serializer_class = ComplaintCategorySerializer
+
+
+@extend_schema(tags=["Dictionaries"])
+class ChronicDiseaseViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = ChronicDisease.objects.all().order_by("name")
+    serializer_class = ChronicDiseaseSerializer

@@ -23,6 +23,7 @@ import type {
 import type {
   AllergyReference,
   AllergyType,
+  ChronicDisease,
   ComplaintCategory,
   HereditaryDisease,
   MedicationReference,
@@ -460,6 +461,216 @@ export function useDictionariesAllergyTypesRetrieve<TData = Awaited<ReturnType<t
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDictionariesAllergyTypesRetrieveQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type dictionariesChronicDiseasesListResponse200 = {
+  data: ChronicDisease[]
+  status: 200
+}
+
+export type dictionariesChronicDiseasesListResponseSuccess = (dictionariesChronicDiseasesListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type dictionariesChronicDiseasesListResponse = (dictionariesChronicDiseasesListResponseSuccess)
+
+export const getDictionariesChronicDiseasesListUrl = () => {
+
+
+
+
+  return `/api/dictionaries/chronic-diseases/`
+}
+
+export const dictionariesChronicDiseasesList = async ( options?: Parameters<typeof customFetch>[1]): Promise<dictionariesChronicDiseasesListResponse> => {
+
+  return customFetch<dictionariesChronicDiseasesListResponse>(getDictionariesChronicDiseasesListUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDictionariesChronicDiseasesListQueryKey = () => {
+    return [
+    `/api/dictionaries/chronic-diseases/`
+    ] as const;
+    }
+
+
+export const getDictionariesChronicDiseasesListQueryOptions = <TData = Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDictionariesChronicDiseasesListQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>> = ({ signal }) => dictionariesChronicDiseasesList({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DictionariesChronicDiseasesListQueryResult = NonNullable<Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>>
+export type DictionariesChronicDiseasesListQueryError = unknown
+
+
+export function useDictionariesChronicDiseasesList<TData = Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>,
+          TError,
+          Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesChronicDiseasesList<TData = Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>,
+          TError,
+          Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesChronicDiseasesList<TData = Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesChronicDiseasesList<TData = Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesList>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDictionariesChronicDiseasesListQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type dictionariesChronicDiseasesRetrieveResponse200 = {
+  data: ChronicDisease
+  status: 200
+}
+
+export type dictionariesChronicDiseasesRetrieveResponseSuccess = (dictionariesChronicDiseasesRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type dictionariesChronicDiseasesRetrieveResponse = (dictionariesChronicDiseasesRetrieveResponseSuccess)
+
+export const getDictionariesChronicDiseasesRetrieveUrl = (id: number,) => {
+
+
+
+
+  return `/api/dictionaries/chronic-diseases/${id}/`
+}
+
+export const dictionariesChronicDiseasesRetrieve = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<dictionariesChronicDiseasesRetrieveResponse> => {
+
+  return customFetch<dictionariesChronicDiseasesRetrieveResponse>(getDictionariesChronicDiseasesRetrieveUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDictionariesChronicDiseasesRetrieveQueryKey = (id: number,) => {
+    return [
+    `/api/dictionaries/chronic-diseases/${id}/`
+    ] as const;
+    }
+
+
+export const getDictionariesChronicDiseasesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDictionariesChronicDiseasesRetrieveQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>> = ({ signal }) => dictionariesChronicDiseasesRetrieve(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DictionariesChronicDiseasesRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>>
+export type DictionariesChronicDiseasesRetrieveQueryError = unknown
+
+
+export function useDictionariesChronicDiseasesRetrieve<TData = Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesChronicDiseasesRetrieve<TData = Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesChronicDiseasesRetrieve<TData = Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesChronicDiseasesRetrieve<TData = Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesChronicDiseasesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDictionariesChronicDiseasesRetrieveQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

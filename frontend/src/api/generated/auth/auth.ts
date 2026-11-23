@@ -25,7 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  MaxLoginRequest,
+  MaxLoginRequestRequest,
   UserProfile
 } from '../models';
 
@@ -253,14 +253,14 @@ export const getAuthMaxLoginCreateUrl = () => {
   return `/api/auth/max-login/`
 }
 
-export const authMaxLoginCreate = async (maxLoginRequest: MaxLoginRequest, options?: Parameters<typeof customFetch>[1]): Promise<authMaxLoginCreateResponse> => {
+export const authMaxLoginCreate = async (maxLoginRequestRequest: MaxLoginRequestRequest, options?: Parameters<typeof customFetch>[1]): Promise<authMaxLoginCreateResponse> => {
 
   return customFetch<authMaxLoginCreateResponse>(getAuthMaxLoginCreateUrl(),
   {
     ...options,
     method: 'POST',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(maxLoginRequest)
+    body: JSON.stringify(maxLoginRequestRequest)
   }
 );}
 
@@ -298,9 +298,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type AuthMaxLoginCreateMutationResult = NonNullable<Awaited<ReturnType<typeof authMaxLoginCreate>>>
-    export type AuthMaxLoginCreateMutationBody = MaxLoginRequest
+    export type AuthMaxLoginCreateMutationBody = MaxLoginRequestRequest
     export type AuthMaxLoginCreateMutationError = unknown
-    export type AuthMaxLoginCreateMutationVariables = {data: MaxLoginRequest}
+    export type AuthMaxLoginCreateMutationVariables = {data: MaxLoginRequestRequest}
 
     export const useAuthMaxLoginCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authMaxLoginCreate>>, TError,AuthMaxLoginCreateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

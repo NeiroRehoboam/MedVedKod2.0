@@ -25,7 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  SendMessageRequest,
+  SendMessageRequestRequest,
   SendMessageResponse,
   SessionDetail,
   SessionList
@@ -304,14 +304,14 @@ export const getAiSessionsMessageCreateUrl = (sessionId: number,) => {
 }
 
 export const aiSessionsMessageCreate = async (sessionId: number,
-    sendMessageRequest: SendMessageRequest, options?: Parameters<typeof customFetch>[1]): Promise<aiSessionsMessageCreateResponse> => {
+    sendMessageRequestRequest: SendMessageRequestRequest, options?: Parameters<typeof customFetch>[1]): Promise<aiSessionsMessageCreateResponse> => {
 
   return customFetch<aiSessionsMessageCreateResponse>(getAiSessionsMessageCreateUrl(sessionId),
   {
     ...options,
     method: 'POST',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(sendMessageRequest)
+    body: JSON.stringify(sendMessageRequestRequest)
   }
 );}
 
@@ -349,9 +349,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type AiSessionsMessageCreateMutationResult = NonNullable<Awaited<ReturnType<typeof aiSessionsMessageCreate>>>
-    export type AiSessionsMessageCreateMutationBody = SendMessageRequest
+    export type AiSessionsMessageCreateMutationBody = SendMessageRequestRequest
     export type AiSessionsMessageCreateMutationError = unknown
-    export type AiSessionsMessageCreateMutationVariables = {sessionId: number;data: SendMessageRequest}
+    export type AiSessionsMessageCreateMutationVariables = {sessionId: number;data: SendMessageRequestRequest}
 
     export const useAiSessionsMessageCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof aiSessionsMessageCreate>>, TError,AiSessionsMessageCreateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

@@ -6,47 +6,30 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
-  useMutation
+  useMutation,
+  useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
   QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
-  UseMutationResult
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
-  FullAnamnesis
+  FullAnamnesis,
+  FullAnamnesisRequest
 } from '../models';
 
 import { customFetch } from '../../fetcher';
-
-// https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
-type IfEquals<X, Y, A = X, B = never> = (<T>() => T extends X ? 1 : 2) extends <
-T,
->() => T extends Y ? 1 : 2
-? A
-: B;
-
-type WritableKeys<T> = {
-[P in keyof T]-?: IfEquals<
-  { [Q in P]: T[P] },
-  { -readonly [Q in P]: T[P] },
-  P
->;
-}[keyof T];
-
-type UnionToIntersection<U> =
-  (U extends any ? (k: U)=>void : never) extends ((k: infer I)=>void) ? I : never;
-type DistributeReadOnlyOverUnions<T> = T extends any ? NonReadonly<T> : never;
-
-type Writable<T> = Pick<T, WritableKeys<T>>;
-type NonReadonly<T> = [T] extends [UnionToIntersection<T>] ? {
-  [P in keyof Writable<T>]: T[P] extends object
-    ? NonReadonly<NonNullable<T[P]>>
-    : T[P];
-} : DistributeReadOnlyOverUnions<T>;
-
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -71,6 +54,126 @@ const getHeaders = (...sources: (RequestInit['headers'] | Record<string, string 
   }
   return Object.fromEntries(layers.reverse().flat()) as Extract<RequestInit['headers'], Record<string, unknown>>;
 };
+
+
+const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
+  const result = { queryKey } as T & { queryKey: K };
+  for (const key of Object.keys(query)) {
+    // The explicit queryKey always wins, matching the previous
+    // `{ ...query, queryKey }` spread where it was set last.
+    if (key === 'queryKey') continue;
+    Object.defineProperty(result, key, {
+      enumerable: true,
+      configurable: true,
+      get: () => (query as Record<string, unknown>)[key],
+    });
+  }
+  return result;
+};
+
+export type anamnesisAnamnesisRetrieveResponse200 = {
+  data: FullAnamnesis
+  status: 200
+}
+
+export type anamnesisAnamnesisRetrieveResponseSuccess = (anamnesisAnamnesisRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type anamnesisAnamnesisRetrieveResponse = (anamnesisAnamnesisRetrieveResponseSuccess)
+
+export const getAnamnesisAnamnesisRetrieveUrl = () => {
+
+
+
+
+  return `/api/anamnesis/anamnesis/`
+}
+
+export const anamnesisAnamnesisRetrieve = async ( options?: Parameters<typeof customFetch>[1]): Promise<anamnesisAnamnesisRetrieveResponse> => {
+
+  return customFetch<anamnesisAnamnesisRetrieveResponse>(getAnamnesisAnamnesisRetrieveUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAnamnesisAnamnesisRetrieveQueryKey = () => {
+    return [
+    `/api/anamnesis/anamnesis/`
+    ] as const;
+    }
+
+
+export const getAnamnesisAnamnesisRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAnamnesisAnamnesisRetrieveQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>> = ({ signal }) => anamnesisAnamnesisRetrieve({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AnamnesisAnamnesisRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>>
+export type AnamnesisAnamnesisRetrieveQueryError = unknown
+
+
+export function useAnamnesisAnamnesisRetrieve<TData = Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAnamnesisAnamnesisRetrieve<TData = Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAnamnesisAnamnesisRetrieve<TData = Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAnamnesisAnamnesisRetrieve<TData = Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof anamnesisAnamnesisRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAnamnesisAnamnesisRetrieveQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export type anamnesisAnamnesisCreateResponse200 = {
@@ -98,14 +201,14 @@ export const getAnamnesisAnamnesisCreateUrl = () => {
   return `/api/anamnesis/anamnesis/`
 }
 
-export const anamnesisAnamnesisCreate = async (fullAnamnesis?: NonReadonly<FullAnamnesis>, options?: Parameters<typeof customFetch>[1]): Promise<anamnesisAnamnesisCreateResponse> => {
+export const anamnesisAnamnesisCreate = async (fullAnamnesisRequest?: FullAnamnesisRequest, options?: Parameters<typeof customFetch>[1]): Promise<anamnesisAnamnesisCreateResponse> => {
 
   return customFetch<anamnesisAnamnesisCreateResponse>(getAnamnesisAnamnesisCreateUrl(),
   {
     ...options,
     method: 'POST',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(fullAnamnesis)
+    body: JSON.stringify(fullAnamnesisRequest)
   }
 );}
 
@@ -143,9 +246,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type AnamnesisAnamnesisCreateMutationResult = NonNullable<Awaited<ReturnType<typeof anamnesisAnamnesisCreate>>>
-    export type AnamnesisAnamnesisCreateMutationBody = NonReadonly<FullAnamnesis> | undefined
+    export type AnamnesisAnamnesisCreateMutationBody = FullAnamnesisRequest | undefined
     export type AnamnesisAnamnesisCreateMutationError = unknown
-    export type AnamnesisAnamnesisCreateMutationVariables = {data?: NonReadonly<FullAnamnesis>}
+    export type AnamnesisAnamnesisCreateMutationVariables = {data?: FullAnamnesisRequest}
 
     export const useAnamnesisAnamnesisCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof anamnesisAnamnesisCreate>>, TError,AnamnesisAnamnesisCreateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

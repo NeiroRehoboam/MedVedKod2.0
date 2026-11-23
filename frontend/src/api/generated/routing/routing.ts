@@ -25,38 +25,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  PatchedRoutingResult,
-  RoutingResult
+  PatchedRoutingResultRequest,
+  RoutingResult,
+  RoutingResultRequest
 } from '../models';
 
 import { customFetch } from '../../fetcher';
-
-// https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
-type IfEquals<X, Y, A = X, B = never> = (<T>() => T extends X ? 1 : 2) extends <
-T,
->() => T extends Y ? 1 : 2
-? A
-: B;
-
-type WritableKeys<T> = {
-[P in keyof T]-?: IfEquals<
-  { [Q in P]: T[P] },
-  { -readonly [Q in P]: T[P] },
-  P
->;
-}[keyof T];
-
-type UnionToIntersection<U> =
-  (U extends any ? (k: U)=>void : never) extends ((k: infer I)=>void) ? I : never;
-type DistributeReadOnlyOverUnions<T> = T extends any ? NonReadonly<T> : never;
-
-type Writable<T> = Pick<T, WritableKeys<T>>;
-type NonReadonly<T> = [T] extends [UnionToIntersection<T>] ? {
-  [P in keyof Writable<T>]: T[P] extends object
-    ? NonReadonly<NonNullable<T[P]>>
-    : T[P];
-} : DistributeReadOnlyOverUnions<T>;
-
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -223,14 +197,14 @@ export const getRoutingResultsCreateUrl = () => {
   return `/api/routing/results/`
 }
 
-export const routingResultsCreate = async (routingResult: NonReadonly<RoutingResult>, options?: Parameters<typeof customFetch>[1]): Promise<routingResultsCreateResponse> => {
+export const routingResultsCreate = async (routingResultRequest: RoutingResultRequest, options?: Parameters<typeof customFetch>[1]): Promise<routingResultsCreateResponse> => {
 
   return customFetch<routingResultsCreateResponse>(getRoutingResultsCreateUrl(),
   {
     ...options,
     method: 'POST',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(routingResult)
+    body: JSON.stringify(routingResultRequest)
   }
 );}
 
@@ -268,9 +242,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type RoutingResultsCreateMutationResult = NonNullable<Awaited<ReturnType<typeof routingResultsCreate>>>
-    export type RoutingResultsCreateMutationBody = NonReadonly<RoutingResult>
+    export type RoutingResultsCreateMutationBody = RoutingResultRequest
     export type RoutingResultsCreateMutationError = unknown
-    export type RoutingResultsCreateMutationVariables = {data: NonReadonly<RoutingResult>}
+    export type RoutingResultsCreateMutationVariables = {data: RoutingResultRequest}
 
     export const useRoutingResultsCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof routingResultsCreate>>, TError,RoutingResultsCreateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -408,14 +382,14 @@ export const getRoutingResultsUpdateUrl = (id: number,) => {
 }
 
 export const routingResultsUpdate = async (id: number,
-    routingResult: NonReadonly<RoutingResult>, options?: Parameters<typeof customFetch>[1]): Promise<routingResultsUpdateResponse> => {
+    routingResultRequest: RoutingResultRequest, options?: Parameters<typeof customFetch>[1]): Promise<routingResultsUpdateResponse> => {
 
   return customFetch<routingResultsUpdateResponse>(getRoutingResultsUpdateUrl(id),
   {
     ...options,
     method: 'PUT',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(routingResult)
+    body: JSON.stringify(routingResultRequest)
   }
 );}
 
@@ -453,9 +427,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type RoutingResultsUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof routingResultsUpdate>>>
-    export type RoutingResultsUpdateMutationBody = NonReadonly<RoutingResult>
+    export type RoutingResultsUpdateMutationBody = RoutingResultRequest
     export type RoutingResultsUpdateMutationError = unknown
-    export type RoutingResultsUpdateMutationVariables = {id: number;data: NonReadonly<RoutingResult>}
+    export type RoutingResultsUpdateMutationVariables = {id: number;data: RoutingResultRequest}
 
     export const useRoutingResultsUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof routingResultsUpdate>>, TError,RoutingResultsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -488,14 +462,14 @@ export const getRoutingResultsPartialUpdateUrl = (id: number,) => {
 }
 
 export const routingResultsPartialUpdate = async (id: number,
-    patchedRoutingResult?: NonReadonly<PatchedRoutingResult>, options?: Parameters<typeof customFetch>[1]): Promise<routingResultsPartialUpdateResponse> => {
+    patchedRoutingResultRequest?: PatchedRoutingResultRequest, options?: Parameters<typeof customFetch>[1]): Promise<routingResultsPartialUpdateResponse> => {
 
   return customFetch<routingResultsPartialUpdateResponse>(getRoutingResultsPartialUpdateUrl(id),
   {
     ...options,
     method: 'PATCH',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(patchedRoutingResult)
+    body: JSON.stringify(patchedRoutingResultRequest)
   }
 );}
 
@@ -533,9 +507,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type RoutingResultsPartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof routingResultsPartialUpdate>>>
-    export type RoutingResultsPartialUpdateMutationBody = NonReadonly<PatchedRoutingResult> | undefined
+    export type RoutingResultsPartialUpdateMutationBody = PatchedRoutingResultRequest | undefined
     export type RoutingResultsPartialUpdateMutationError = unknown
-    export type RoutingResultsPartialUpdateMutationVariables = {id: number;data?: NonReadonly<PatchedRoutingResult>}
+    export type RoutingResultsPartialUpdateMutationVariables = {id: number;data?: PatchedRoutingResultRequest}
 
     export const useRoutingResultsPartialUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof routingResultsPartialUpdate>>, TError,RoutingResultsPartialUpdateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
