@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'patients',
     'anamnesis',
     'routing',
+    'rag.apps.RagConfig',
 ]
 
 MIDDLEWARE = [
