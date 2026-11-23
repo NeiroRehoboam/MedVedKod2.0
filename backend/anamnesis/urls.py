@@ -1,10 +1,6 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import AnamnesisViewSet
-
-router = DefaultRouter()
-router.register(r'anamnesis', AnamnesisViewSet, basename='anamnesis')
+from django.urls import path
+from .views import AnamnesisView
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("anamnesis/", AnamnesisView.as_view(), name="anamnesis"),
 ]

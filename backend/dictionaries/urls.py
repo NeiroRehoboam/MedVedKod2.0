@@ -3,10 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import *
 
 router = DefaultRouter()
-router.register(r'smoking', SmokingStatusViewSet, basename='smoking')
-router.register(r'alcohol', AlcoholStatusViewSet, basename='alcohol')
 router.register(r'allergy-types', AllergyTypeViewSet, basename='allergy-types')
-router.register(r'medical-events', MedicalEventTypeViewSet, basename='medical-events')
 router.register(r'hereditary', HereditaryDiseaseViewSet, basename='hereditary')
 router.register(r'specialties', SpecialtyViewSet, basename='specialties')
 router.register(r'allergens', AllergyReferenceViewSet, basename='allergens')

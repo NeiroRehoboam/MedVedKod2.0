@@ -1,20 +1,8 @@
 from django.contrib import admin
 from .models import *
 
-@admin.register(SmokingStatus)
-class SmokingStatusAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'active'); list_editable = ('active',)
-
-@admin.register(AlcoholStatus)
-class AlcoholStatusAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'active'); list_editable = ('active',)
-
 @admin.register(AllergyType)
 class AllergyTypeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'active'); list_editable = ('active',)
-
-@admin.register(MedicalEventType)
-class MedicalEventTypeAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'active'); list_editable = ('active',)
 
 @admin.register(HereditaryDisease)
