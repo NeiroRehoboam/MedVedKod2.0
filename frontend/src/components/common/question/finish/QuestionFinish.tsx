@@ -1,3 +1,4 @@
+import type { AiSessionResponse } from "@/api/generated/models"
 import { AlertCircle, AlertTriangle } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -11,23 +12,20 @@ import { type PaymentType } from "@/data/payment.mock"
 import { Button } from "@maxhub/max-ui"
 import { DoctorSignature, PageDescription, PageTitle } from "../../typography"
 
-export type Urgency = "emergency" | "urgent" | "planned" | "self_care"
+type Urgency = "emergency" | "urgent" | "planned" | "self_care" | "undetermined"
 
-export type TriageResult = {
-  specialist: string
-  specialistDescription: string
-  urgency: Urgency
-  place: string
-  recommendation: string
-  symptoms: string[]
-  reason: string
-}
 
 type QuestionFinishProps = {
-  result?: TriageResult
+  result?: AiSessionResponse
   payment?: PaymentType
 }
 const urgencyConfig = {
+  undetermined: {
+    label: "Не определена",
+    description: "",
+    className: "bg-max-tertiary text-max-text-primary",
+    iconClassName: "text-max-text-primary",
+  },
   emergency: {
     label: "Экстренно",
     description: "Необходима немедленная медицинская помощь.",
@@ -62,24 +60,21 @@ const urgencyConfig = {
   }
 >
 
-const demoResult: TriageResult = {
-  specialist: "Терапевт",
-  specialistDescription:
-    "Врач общей практики оценит ваше состояние и при необходимости направит к профильному специалисту.",
-  urgency: "emergency",
-  place: "Поликлиника",
-  recommendation:
-    "Запишитесь на консультацию к терапевту для оценки симптомов и определения дальнейших действий.",
-  symptoms: [
-    "Головная боль",
-    "Периодические симптомы",
-    "Продолжительность — несколько дней",
-  ],
-  reason:
-    "Это демонстрационный пример оформления результата. Реальная срочность и маршрут обращения должны определяться на основании ответов пациента и проверенных правил маршрутизации.",
-}
-
-export function QuestionFinish({ result = demoResult }: QuestionFinishProps) {
+export function QuestionFinish({ result: response }: QuestionFinishProps) {
+  const recommendation = response?.recommendation
+  const text = (key: string) => typeof recommendation?.[key] === "string" ? recommendation[key] : ""
+  const rawUrgency = response?.routing?.urgency || text("urgency") || response?.safety.urgency || ""
+  const normalized = rawUrgency.toLowerCase()
+  const urgencyKey: Urgency = response?.safety.should_stop || normalized === "emergency"
+    ? "emergency" : normalized === "urgent" ? "urgent" : normalized === "self_help" || normalized === "self_care" ? "self_care" : normalized === "planned" ? "planned" : "undetermined"
+  const result = {
+    urgency: urgencyKey,
+    recommendation: response?.routing?.recommendations || text("recommendation") || response?.safety.recommended_action,
+    specialistDescription: text("doctor"),
+    place: text("place"),
+    symptoms: Array.isArray(recommendation?.evidence) ? recommendation.evidence.filter((item): item is string => typeof item === "string") : [],
+    reason: response?.routing?.justification || text("justification") || response?.safety.reason,
+  }
   const navigate = useNavigate()
   const urgency = urgencyConfig[result.urgency]
 

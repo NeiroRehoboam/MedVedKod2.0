@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react"
 
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet"
 
-import type { Question } from "@/data/questions-patient.mock"
+import type { SessionQuestion } from "@/api/generated/models"
 import { PageDescription } from "../../typography"
 import {
   AlertDialogDescription,
@@ -13,7 +13,7 @@ import {
 type AnswersSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  questions: Question[]
+  questions: SessionQuestion[]
   answers: Record<string, string>
   currentIndex: number
   onSelect: (index: number) => void
@@ -83,7 +83,7 @@ export function AnswersSheet({
           </AlertDialogTitle>
 
           <AlertDialogDescription>
-            Вернитесь к пройденным вопросам, чтобы изменить ответ.
+            Просмотрите ответы на пройденные вопросы.
           </AlertDialogDescription>
         </SheetHeader>
 
@@ -124,7 +124,7 @@ export function AnswersSheet({
                             : "text-max-text-primary!"
                       }`}
                     >
-                      {isFuture ? "Уточняющий вопрос" : question.text}
+                      {isFuture ? "Уточняющий вопрос" : question.question_text}
                     </PageDescription>
                     {/* <div
                       className={`line-clamp-2 leading-4.5 font-medium ${

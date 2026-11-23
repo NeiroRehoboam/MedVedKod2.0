@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 
 import {
@@ -11,21 +11,43 @@ import {
 } from "@/components/common"
 
 import { useQuestionFlow } from "@/hooks/useQuestionFlow"
-import { useAiSession, useStartAiSession } from "@/hooks/useAiSessions"
+import {
+  useAiSession,
+  useStartAiSession,
+  useInitialQuestion,
+} from "@/hooks/useAiSessions"
 
-import { questions } from "@/data/questions-patient.mock"
+import type { AiSessionResponse } from "@/api/generated/models"
 
 export function QuestionPage() {
   const navigate = useNavigate()
   const { sessionId } = useParams<{ sessionId: string }>()
 
-  const flow = useQuestionFlow()
+  const flow = useQuestionFlow(sessionId)
   const startSession = useStartAiSession()
   const sessionQuery = useAiSession(sessionId)
+
+  const initialQuestionQuery = useInitialQuestion(
+    sessionId,
+    flow.step === "questions"
+  )
+
+  const initialQuestionData = initialQuestionQuery.data?.data
+
+  const { applyResponse } = flow
+  const initializedSession = useRef<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (initialQuestionData && sessionId && initializedSession.current !== sessionId) {
+      initializedSession.current = sessionId
+      applyResponse(initialQuestionData)
+    }
+  }, [initialQuestionData, sessionId, applyResponse])
 
   const isExistingSession = Boolean(sessionId)
   const createdSessionId = useRef<string | null>(null)
   const creatingSession = useRef(false)
+
 
   const goHome = () => navigate("/home")
 
@@ -46,7 +68,13 @@ export function QuestionPage() {
 
     try {
       const response = await startSession.mutateAsync()
-      const id = String(response.data.id)
+      const data: AiSessionResponse = response.data
+
+      if (data.session?.id == null) {
+        throw new Error("Бэкенд не вернул ID сессии")
+      }
+
+      const id = String(data.session.id)
 
       createdSessionId.current = id
 
@@ -58,7 +86,6 @@ export function QuestionPage() {
       creatingSession.current = false
     }
   }
-
   const renderStep = () => {
     switch (flow.step) {
       case "welcome":
@@ -79,6 +106,14 @@ export function QuestionPage() {
         )
 
       case "questions":
+        if (initialQuestionQuery.isError) {
+          return <p>Не удалось загрузить вопрос. <button type="button" onClick={() => void initialQuestionQuery.refetch()}>Попробовать снова</button></p>
+        }
+
+        if (!flow.question) {
+          return <p>Загружаем вопрос...</p>
+        }
+
         return <QuestionStep flow={flow} />
 
       case "payment":
@@ -96,7 +131,7 @@ export function QuestionPage() {
         )
 
       case "finished":
-        return <QuestionFinish payment={flow.payment ?? undefined} />
+        return <QuestionFinish result={flow.response} payment={flow.payment ?? undefined} />
     }
   }
 
@@ -131,7 +166,7 @@ export function QuestionPage() {
           onExit={handleExit}
           questionIndex={flow.step === "questions" ? flow.index : undefined}
           totalQuestions={
-            flow.step === "questions" ? questions.length : undefined
+            flow.step === "questions" ? flow.questions.length : undefined
           }
         />
       )}

@@ -15,4 +15,6 @@ export interface PatientRequest {
   birth_date?: string | null;
   /** @minLength 1 */
   diagnosis?: string;
+  /** @nullable */
+  preferred_payment?: number | null;
 }

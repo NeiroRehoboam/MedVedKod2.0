@@ -5,12 +5,23 @@
  * API для медицинского сервиса (пациенты, анамнез, ИИ-ассистент)
  * OpenAPI spec version: 1.0.0
  */
+import type { RoutingSummary } from './routingSummary';
+import type { SafetyStatus } from './safetyStatus';
+import type { SendMessageResponseRecommendation } from './sendMessageResponseRecommendation';
 import type { SessionDetail } from './sessionDetail';
 import type { SessionQuestion } from './sessionQuestion';
 
+/**
+ * Single response shape for every AI-session endpoint.
+ */
 export interface SendMessageResponse {
   status: string;
+  session: SessionDetail;
+  questions: SessionQuestion[];
+  ai_questions: SessionQuestion[];
+  next_question?: SessionQuestion | null;
+  safety: SafetyStatus;
+  recommendation?: SendMessageResponseRecommendation;
+  routing?: RoutingSummary;
   message?: string;
-  next_question?: SessionQuestion;
-  session?: SessionDetail;
 }

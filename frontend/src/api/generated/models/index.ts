@@ -6,12 +6,15 @@
  * OpenAPI spec version: 1.0.0
  */
 
+export * from './aiSessionResponse';
+export * from './aiSessionResponseRecommendation';
 export * from './alcoholStatusEnum';
 export * from './allergyReference';
 export * from './allergyType';
 export * from './blankEnum';
 export * from './chronicDisease';
 export * from './complaintCategory';
+export * from './dangerStatusEnum';
 export * from './fullAnamnesis';
 export * from './fullAnamnesisRequest';
 export * from './hereditaryDisease';
@@ -35,12 +38,17 @@ export * from './patientChronicDiseaseRequest';
 export * from './patientMedication';
 export * from './patientMedicationRequest';
 export * from './patientRequest';
+export * from './paymentType';
+export * from './paymentTypeRequest';
 export * from './pregnancyEnum';
 export * from './routingResult';
 export * from './routingResultRequest';
+export * from './routingSummary';
+export * from './safetyStatus';
 export * from './sendMessageRequest';
 export * from './sendMessageRequestRequest';
 export * from './sendMessageResponse';
+export * from './sendMessageResponseRecommendation';
 export * from './sessionDetail';
 export * from './sessionList';
 export * from './sessionQuestion';

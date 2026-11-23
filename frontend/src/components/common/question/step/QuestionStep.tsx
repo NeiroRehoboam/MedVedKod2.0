@@ -1,7 +1,6 @@
 import { useRef, useState } from "react"
 import { Textarea } from "@maxhub/max-ui"
 
-import { questions } from "@/data/questions-patient.mock"
 import type { QuestionFlow } from "@/hooks/useQuestionFlow"
 
 import { AnswersSheet } from "./AnswersSheet"
@@ -61,12 +60,6 @@ export function QuestionStep({ flow }: QuestionStepProps) {
                     : "Ваш ответ"}
                 </PageDescription>
               </label>
-
-              {question.optional && (
-                <PageDescription variant="description" color="secondary">
-                  Необязательно
-                </PageDescription>
-              )}
             </div>
 
             <div className="relative">
@@ -75,7 +68,7 @@ export function QuestionStep({ flow }: QuestionStepProps) {
                 key={question.id}
                 value={answer}
                 onChange={(event) => updateAnswer(event.target.value)}
-                readOnly={isListening}
+                readOnly={isListening || flow.readOnly}
                 placeholder="Напишите или расскажите, как вы себя чувствуете…"
                 className="min-h-30 p-1"
               />
@@ -101,25 +94,33 @@ export function QuestionStep({ flow }: QuestionStepProps) {
           </div>
 
           <QuestionNavigation
-            canBack={!isListening}
+            canBack={!isListening && !flow.isPending && !flow.response?.safety.should_stop}
             canNext={canNext && !isListening}
             isLast={isLast}
-            canSkip={Boolean(question.optional && !answer.trim())}
+            canSkip={false}
             onBack={handleBack}
             onNext={handleNext}
             onOpenAnswers={() => {
-              if (!isListening) {
+              if (!isListening && !flow.isPending) {
                 setSheetOpen(true)
               }
             }}
           />
+          {flow.isPending && <p role="status">Обрабатываем ответ...</p>}
+          {flow.error && <p role="alert">{flow.error}</p>}
+          {flow.response?.safety.should_stop && !emergencyOpen && (
+            <div>
+              <p role="alert">{flow.response.safety.recommended_action}</p>
+              <button type="button" onClick={continueAfterEmergency}>Перейти к результату</button>
+            </div>
+          )}
         </div>
       </section>
 
       <AnswersSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
-        questions={questions}
+        questions={flow.questions}
         answers={answers}
         currentIndex={index}
         onSelect={selectQuestion}
@@ -129,6 +130,7 @@ export function QuestionStep({ flow }: QuestionStepProps) {
         open={emergencyOpen}
         onOpenChange={setEmergencyOpen}
         onContinue={continueAfterEmergency}
+        safety={flow.response?.safety}
       />
     </>
   )
