@@ -3,6 +3,8 @@ from rest_framework.routers import DefaultRouter
 from .views import PatientViewSet
 
 router = DefaultRouter()
+
+# CRUD пациентов
 router.register(r'patients', PatientViewSet, basename='patient')
 
 urlpatterns = [

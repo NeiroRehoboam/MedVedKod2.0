@@ -13,6 +13,7 @@ from .serializers import FullAnamnesisSerializer
 class AnamnesisView(APIView):
     permission_classes = [IsAuthenticated]
 
+    # чтение анамнеза
     @extend_schema(
         responses={200: FullAnamnesisSerializer},
     )
@@ -38,6 +39,7 @@ class AnamnesisView(APIView):
         serializer = FullAnamnesisSerializer(anamnesis)
         return Response(serializer.data)
 
+    # сохранение анамнеза
     @extend_schema(
         request=FullAnamnesisSerializer,
         responses={

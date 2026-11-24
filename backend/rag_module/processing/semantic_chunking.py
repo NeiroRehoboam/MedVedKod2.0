@@ -184,25 +184,7 @@ def split_pages_semantically(pages: list[dict]) -> list[dict]:
         "end": current_end
     })
 
-    # 5. Объединяем маленькие чанки, если хватает места
-    # merged_chunks = []
-
-    # for chunk in raw_chunks:
-
-    #     if merged_chunks:
-    #         previous = merged_chunks[-1]
-
-    #         combined_size = chunk["end"] - previous["start"]
-
-    #         if (
-    #             chunk["end"] - chunk["start"] < MIN_CHUNK_SIZE
-    #             and combined_size <= CHUNK_SIZE
-    #         ):
-    #             previous["end"] = chunk["end"]
-    #             continue
-
-    #     merged_chunks.append(chunk)
-# 5. Сохраняем смысловые границы чанков
+    # 5. Сохраняем смысловые границы чанков
     merged_chunks = raw_chunks
     # 6. Формируем результат и определяем страницы
     result = []

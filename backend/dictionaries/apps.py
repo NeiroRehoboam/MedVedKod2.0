@@ -5,7 +5,7 @@ PAYMENT_TYPES = ("ОМС", "ДМС", "Платно")
 
 
 def seed_payment_types(sender, **kwargs):
-    """Keep the payment dictionary populated on every fresh deploy."""
+    """Заполняет справочник способов оплаты при каждом свежем деплое."""
     PaymentType = sender.get_model("PaymentType")
     for name in PAYMENT_TYPES:
         PaymentType.objects.get_or_create(name=name)

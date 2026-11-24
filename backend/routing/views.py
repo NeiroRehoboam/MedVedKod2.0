@@ -3,6 +3,7 @@ from drf_spectacular.utils import extend_schema
 from .models import RoutingResult
 from .serializers import RoutingResultSerializer
 
+# история маршрутизации
 @extend_schema(tags=['Routing'])
 class RoutingResultViewSet(viewsets.ModelViewSet):
     queryset = RoutingResult.objects.all()

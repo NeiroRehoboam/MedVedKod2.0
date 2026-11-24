@@ -19,6 +19,7 @@ from .serializers import (
     SessionDetailSerializer,
     SessionListSerializer,
     SessionQuestionSerializer,
+    SessionResultSerializer,
 )
 from .services import (
     check_message_safety,
@@ -42,7 +43,7 @@ DEFAULT_BASE_OPTIONS = (
 
 
 def _get_session(request, session_id: int) -> Session:
-    """Only the owner can access a session."""
+    """Сессию может открыть только её владелец."""
     patient = get_object_or_404(Patient, user=request.user)
     return get_object_or_404(Session, id=session_id, patient=patient)
 
@@ -52,7 +53,7 @@ def _ordered_questions(session) -> list:
 
 
 def _ai_questions(session):
-    """The six generated questions, stored in DB and re-sent on every response."""
+    """Шесть сгенерированных вопросов хранятся в БД и пересылаются в каждом ответе."""
     return list(session.questions.filter(source=SessionQuestion.Source.AI).order_by('order_number', 'id'))
 
 
@@ -71,7 +72,7 @@ def _session_response(
     message: str | None = None,
     response_status: int = status.HTTP_200_OK,
 ) -> Response:
-    """One response shape for all AI-session endpoints."""
+    """Единая форма ответа для всех эндпоинтов AI-сессий."""
     data = {
         'status': status_value,
         'session': SessionDetailSerializer(session).data,
@@ -111,6 +112,36 @@ def _save_routing(session, safety: dict, recommendation: dict) -> RoutingResult:
     return routing
 
 
+# рекомендация из сохранённой маршрутизации
+def _stored_recommendation(routing: RoutingResult) -> dict:
+    return {
+        'source': 'stored',
+        'recommendation': routing.recommendations,
+        'justification': routing.justification,
+        'urgency': routing.urgency.lower(),
+        'doctor': routing.specialty.name if routing.specialty_id else '',
+        'place': '',
+        'evidence': [],
+    }
+
+
+# результат конкретной сессии по id
+def _saved_result_response(session) -> Response:
+    routing = RoutingResult.objects.filter(session=session).first()
+    if routing is None:
+        return Response(
+            {'error': 'Результат сессии ещё не сформирован'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    return _session_response(
+        session,
+        session.status,
+        get_session_safety(session),
+        recommendation=_stored_recommendation(routing),
+        routing=routing,
+    )
+
+
 @extend_schema(tags=['AI Sessions'])
 class SessionViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -121,15 +152,30 @@ class SessionViewSet(viewsets.ReadOnlyModelViewSet):
     def get_serializer_class(self):
         return SessionListSerializer if self.action == 'list' else SessionDetailSerializer
 
-    @extend_schema(responses={200: AiSessionResponseSerializer})
+    @extend_schema(responses={200: SessionResultSerializer})
     def retrieve(self, request, *args, **kwargs):
         session = self.get_object()
+        routing = RoutingResult.objects.filter(session=session).first()
+        # результат при повторном открытии сессии
         return _session_response(
             session,
             session.status,
             get_session_safety(session),
             next_question=_next_question(session),
+            recommendation=_stored_recommendation(routing) if routing else None,
+            routing=routing,
         )
+
+
+# результат завершённой сессии (только просмотр)
+@extend_schema(tags=['AI Sessions'])
+class SessionResultView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: SessionResultSerializer})
+    def get(self, request, session_id):
+        session = _get_session(request, session_id)
+        return _saved_result_response(session)
 
 
 @extend_schema(tags=['AI Sessions'])
@@ -224,9 +270,9 @@ class SendMessageView(APIView):
         question.answered_at = timezone.now()
         question.save(update_fields=['answer_text', 'answered_at'])
 
-        # Every answer is checked, including answers to the AI questions.
-        # The full history is re-checked as well so a sign missed earlier
-        # still stops the survey.
+        # Проверяется каждый ответ, включая ответы на AI-вопросы.
+        # Вся история проверяется заново, чтобы признак, пропущенный ранее,
+        # всё равно остановил опрос.
         safety = choose_worst_safety(
             check_message_safety(user_text),
             get_session_safety(session, use_llm=False),
@@ -255,8 +301,8 @@ class SendMessageView(APIView):
                 message=safety['recommended_action'],
             )
 
-        # Generate the six follow-up questions once, then simply re-send the
-        # stored copies with every subsequent answer (no extra endpoint).
+        # Генерируем шесть следующих вопросов один раз, затем просто пересылаем
+        # сохранённые копии при каждом следующем ответе (без отдельного эндпоинта).
         if not _ai_questions(session):
             max_order = max([q.order_number for q in _ordered_questions(session)] or [0])
             SessionQuestion.objects.bulk_create([

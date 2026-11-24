@@ -67,7 +67,7 @@ class RoutingSummarySerializer(serializers.Serializer):
 
 
 class AiSessionResponseSerializer(serializers.Serializer):
-    """Single response shape for every AI-session endpoint."""
+    """Единая форма ответа для всех эндпоинтов AI-сессий."""
 
     status = serializers.CharField()
     session = SessionDetailSerializer()
@@ -80,6 +80,10 @@ class AiSessionResponseSerializer(serializers.Serializer):
     message = serializers.CharField(required=False)
 
 
+class SessionResultSerializer(AiSessionResponseSerializer):
+    """Сохранённый результат завершённой сессии (только чтение)."""
+
+
 class SendMessageRequestSerializer(serializers.Serializer):
     content = serializers.CharField(max_length=4000, trim_whitespace=True)
     question_id = serializers.IntegerField(required=False, min_value=1)
@@ -90,4 +94,4 @@ class SendMessageResponseSerializer(AiSessionResponseSerializer):
 
 
 class CompleteRequestSerializer(serializers.Serializer):
-    """The completion endpoint intentionally takes no payload."""
+    """Эндпоинт завершения намеренно не принимает данные."""

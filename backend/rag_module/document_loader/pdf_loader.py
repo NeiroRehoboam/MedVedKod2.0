@@ -1,4 +1,3 @@
-# import fitz
 import pymupdf as fitz
 from pathlib import Path
 
