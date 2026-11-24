@@ -1,21 +1,41 @@
-"""
-Сервисный слой для интеграции внешнего модуля ИИ.
+def process_user_message(
+    consultation,
+    user_message_text: str,
+    history: list = None,
+) -> dict:
+    """
+    Формирует итоговую медицинскую рекомендацию через RAG.
 
-Контракт:
-process_user_message(consultation, user_message_text, history) -> dict
-  Возвращает:
-  {
-      "reply": str,
-      "is_emergency": bool,
-      "emergency_reason": str | None,
-      "is_final": bool,
-  }
+    history — список ответов:
+    [
+        {"question": "Вопрос", "answer": "Ответ"},
+        ...
+    ]
+    """
 
-Пока модуль ИИ не подключен, выбрасываем NotImplementedError.
-"""
+    from rag_module import process_patient_answers
 
-def process_user_message(consultation, user_message_text: str, history: list = None) -> dict:
-    raise NotImplementedError(
-        "Модуль ИИ ещё не подключён. "
-        "Замените тело функции в ai_assis/services.py."
-    )
+    answers = history or []
+
+    result = process_patient_answers(answers)
+
+    # Поддерживаем как Pydantic-модель, так и обычный dict.
+    if hasattr(result, "model_dump"):
+        recommendation = result.model_dump()
+    elif isinstance(result, dict):
+        recommendation = result
+    else:
+        raise TypeError(
+            f"Неожиданный тип результата RAG: {type(result).__name__}"
+        )
+
+    return {
+        "reply": recommendation.get(
+            "recommendation",
+            "Рекомендация сформирована.",
+        ),
+        "is_emergency": recommendation.get("urgency") == "emergency",
+        "emergency_reason": None,
+        "is_final": True,
+        "recommendation": recommendation,
+    }
