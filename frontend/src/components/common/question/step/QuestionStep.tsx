@@ -52,7 +52,7 @@ export function QuestionStep({ flow }: QuestionStepProps) {
             <Spinner className="size-8" />
 
             <PageDescription variant="description">
-              Подбираем следующий вопрос…
+              Обрабатываем ответ…
             </PageDescription>
           </div>
         )}

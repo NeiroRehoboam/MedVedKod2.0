@@ -4,6 +4,7 @@ import type { AiSessionResponse } from "@/api/generated/models"
 import {
   useAiSessionsMessageCreate,
   useAiSessionsCompleteCreate,
+  useAiSessionsQuestionsPartialUpdate,
 } from "@/api/generated/ai-sessions/ai-sessions"
 
 export type QuestionStepType =
@@ -31,6 +32,7 @@ export function useQuestionFlow(
 
   const sendMessage = useAiSessionsMessageCreate()
   const complete = useAiSessionsCompleteCreate()
+  const updateAnswerMutation = useAiSessionsQuestionsPartialUpdate()
 
   const questions = response?.questions ?? []
   const question = questions[index]
@@ -45,16 +47,18 @@ export function useQuestionFlow(
   const answered = Boolean(question?.answer_text?.trim())
 
   const answer =
-    isCompleted || answered
+    isCompleted
       ? question?.answer_text ?? ""
-      : drafts[question?.id] ?? ""
+      : drafts[question?.id] ?? question?.answer_text ?? ""
+
+  const answerChanged = answered && answer.trim() !== question.answer_text?.trim()
 
   const stopped =
     emergencyPending ||
     (!isCompleted && response?.safety.should_stop === true)
 
   const isPending =
-    sendMessage.isPending || complete.isPending
+    sendMessage.isPending || complete.isPending || updateAnswerMutation.isPending
 
   const isLast =
     !isCompleted && Boolean(response && !response.next_question)
@@ -73,6 +77,7 @@ export function useQuestionFlow(
       // Критический случай при прохождении текущего опроса.
       // Проверяем ДО обработки статуса COMPLETED.
       if (fromSubmission && data.safety.should_stop) {
+        setIndex((prev) => Math.max(0, Math.min(prev, data.questions.length - 1)))
         setEmergencyPending(true)
         setEmergencyOpen(true)
         setSheetOpen(false)
@@ -117,17 +122,29 @@ export function useQuestionFlow(
     try {
       let current = response
 
-      if (!answered) {
-        const result = await sendMessage.mutateAsync({
-          sessionId: Number(sessionId),
-          data: {
-            content: answer.trim(),
-            question_id: question.id,
-          },
-        })
+      if (!answered || answerChanged) {
+        const result = answered
+          ? await updateAnswerMutation.mutateAsync({
+              sessionId: Number(sessionId),
+              questionId: question.id,
+              data: { answer_text: answer.trim() },
+            })
+          : await sendMessage.mutateAsync({
+              sessionId: Number(sessionId),
+              data: {
+                content: answer.trim(),
+                question_id: question.id,
+              },
+            })
 
         current = result.data
 
+        setDrafts((prev) => {
+          if (answerChanged) return {}
+          const next = { ...prev }
+          delete next[question.id]
+          return next
+        })
         applyResponse(current, true)
       }
 
@@ -163,7 +180,11 @@ export function useQuestionFlow(
         setStep("payment")
       }
     } catch {
-      setError("Не удалось отправить данные. Попробуйте ещё раз.")
+      setError(
+        answerChanged
+          ? "Не удалось сохранить ответ. Попробуйте ещё раз."
+          : "Не удалось отправить данные. Попробуйте ещё раз."
+      )
     } finally {
       busy.current = false
     }
@@ -174,6 +195,7 @@ export function useQuestionFlow(
 
     setIndex(nextIndex)
     setSheetOpen(false)
+    setError(null)
   }
 
   const resetFlow = () => {
@@ -202,7 +224,6 @@ export function useQuestionFlow(
         !busy.current &&
         !isCompleted &&
         !stopped &&
-        !answered &&
         question
       ) {
         setDrafts((prev) => ({
@@ -250,7 +271,7 @@ export function useQuestionFlow(
     error,
 
     readOnly:
-      isCompleted || answered || stopped || isPending,
+      isCompleted || stopped || isPending,
   }
 }
 

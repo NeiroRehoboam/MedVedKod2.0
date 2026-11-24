@@ -96,8 +96,9 @@ export function AnswersSheet({
 
               const isCurrent = index === currentIndex
               const isPast = index < currentIndex
-              const isFuture = !isCompleted && index > currentIndex
-              const canNavigate = isCompleted ? !isCurrent : isPast
+              const hasAnswer = Boolean(answer?.trim())
+              const isFuture = !isCompleted && !hasAnswer && index > currentIndex
+              const canNavigate = !isCurrent && (isCompleted || isPast || hasAnswer)
 
               return (
                 <button

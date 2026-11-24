@@ -30,12 +30,6 @@ def demo_login(request):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    if request.META.get("REMOTE_ADDR") not in ("127.0.0.1", "::1"):
-        return Response(
-            {"error": "Доступ разрешён только локально"},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
     demo_max_id = "medved-dev-user"
 
     user, created = User.objects.get_or_create(

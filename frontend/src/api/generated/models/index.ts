@@ -30,6 +30,7 @@ export * from './patchedPatient';
 export * from './patchedPatientRequest';
 export * from './patchedRoutingResult';
 export * from './patchedRoutingResultRequest';
+export * from './patchedUpdateAnswerRequestRequest';
 export * from './patient';
 export * from './patientAllergy';
 export * from './patientAllergyRequest';
