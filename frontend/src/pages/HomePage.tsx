@@ -9,7 +9,6 @@ export function HomePage() {
   }
 
   const handleAppealClick = (id: string) => {
-    // console.log(id)
     navigate(`/question/${id}`)
   }
 

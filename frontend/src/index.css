@@ -5,7 +5,7 @@
 @import "@maxhub/max-ui/dist/styles.css";
 
 @theme inline {
-  /* Background */
+  /* Фон */
   --color-max-surface: var(--background-surface);
   --color-max-primary: var(--background-primary);
   --color-max-secondary: var(--background-secondary);
@@ -14,7 +14,7 @@
   --color-max-overlay: var(--background-overlay);
   --color-max-overlay-secondary: var(--background-overlay-secondary);
 
-  /* Text */
+  /* Текст */
   --color-max-text-primary: var(--text-primary);
   --color-max-text-secondary: var(--text-secondary);
   --color-max-text-tertiary: var(--text-tertiary);
@@ -25,7 +25,7 @@
   --color-max-text-negative: var(--text-negative);
 }
 @theme inline {
-  /* Border Radius */
+  /* Скругления */
   --radius-max-xsmall: var(--size-border-radius-button-xsmall);
   --radius-max-small: var(--size-border-radius-button-small);
   --radius-max-medium: var(--size-border-radius-button-medium);

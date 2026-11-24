@@ -8,6 +8,7 @@ services:
       - ./backend:/app
     env_file:
       - .env
+    # запуск Django
     command: sh -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
 
   nginx:

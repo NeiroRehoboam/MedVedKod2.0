@@ -1,8 +1,9 @@
-"""Adapter layer between the AI session API and the RAG library.
+"""Слой-адаптер между API AI-сессий и библиотекой RAG.
 
-The RAG library depends on external services (GigaChat, Qdrant) and loads
-heavy ML models on import.  Nothing is imported at module import time here:
-every integration is lazy and degrades to a conservative, safe fallback.
+Библиотека RAG зависит от внешних сервисов (GigaChat, Qdrant) и загружает
+тяжёлые ML-модели при импорте. Здесь ничего не импортируется при загрузке
+модуля: каждая интеграция ленивая и при сбое переходит к консервативному
+безопасному резервному варианту.
 """
 
 import copy
@@ -10,7 +11,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Statuses come from rag_module.triage.safety_models.DangerStatus.
+# Статусы берутся из rag_module.triage.safety_models.DangerStatus.
 DANGER_DANGEROUS = "dangerous"
 DANGER_UNCERTAIN = "uncertain"
 DANGER_NONE = "no_critical_signs_detected"
@@ -26,14 +27,14 @@ EMERGENCY_ACTION = (
     "Не ждите окончания опроса."
 )
 
-# The client paginates these questions itself, so the API generates a batch
-# once and then simply re-sends the stored list with every response.
+# Клиент сам пагинирует вопросы, поэтому API создаёт пачку один раз
+# и затем просто пересылает сохранённый список в каждом ответе.
 AI_QUESTION_MIN = 6
 AI_QUESTION_MAX = 10
 
 
 def ai_question_count() -> int:
-    """Configurable batch size, clamped to the 6-10 range from the spec."""
+    """Размер пачки настраивается, ограничение — 6–10 вопросов."""
     try:
         from django.conf import settings
 
@@ -61,7 +62,7 @@ FALLBACK_QUESTIONS = (
 
 
 def choose_worst_safety(*results: dict) -> dict:
-    """Pick the most severe safety verdict; used for per-answer re-checks."""
+    """Выбирает самую тяжёлую оценку безопасности при повторной проверке ответов."""
     valid = [item for item in results if isinstance(item, dict)]
     if not valid:
         return _fallback_safety("Нет результатов проверки безопасности.")
@@ -78,8 +79,9 @@ def _safety(
     recommended_action: str,
     matched_signs: list | tuple = (),
     should_stop: bool = False,
+    force_stop: bool = False,
 ) -> dict:
-    """Build the unified safety payload returned by every AI endpoint."""
+    """Формирует единый payload безопасности для всех AI-эндпоинтов."""
     return {
         "danger_status": danger_status,
         "is_dangerous": danger_status == DANGER_DANGEROUS,
@@ -87,12 +89,13 @@ def _safety(
         "reason": reason,
         "matched_signs": list(matched_signs),
         "recommended_action": recommended_action,
-        "should_stop": bool(should_stop),
+        # uncertain не завершает опрос; остановка — только dangerous и сбои проверки.
+        "should_stop": bool(force_stop or (should_stop and danger_status == DANGER_DANGEROUS)),
     }
 
 
 def _fallback_safety(reason: str) -> dict:
-    """Fail-safe result: stop the survey when the check could not run."""
+    """Резервный результат: остановить опрос, если проверку выполнить не удалось."""
     return _safety(
         danger_status=DANGER_UNCERTAIN,
         urgency="undetermined",
@@ -101,7 +104,7 @@ def _fallback_safety(reason: str) -> dict:
             "Опрос приостановлен. Не удалось надёжно проверить сообщение; "
             "обратитесь к специалисту."
         ),
-        should_stop=True,
+        force_stop=True,
     )
 
 
@@ -122,11 +125,11 @@ def _map_rule_result(rule_result) -> dict:
             urgency="undetermined",
             reason=rule_result.reason,
             recommended_action=(
-                "Опрос приостановлен. Ситуация требует уточнения "
-                "или оценки специалистом."
+                "Продолжайте опрос. Ситуация требует уточнения, "
+                "но критических признаков не найдено."
             ),
             matched_signs=rule_result.matched_rules,
-            should_stop=True,
+            should_stop=False,
         )
     return _safety(
         danger_status=DANGER_NONE,
@@ -142,11 +145,11 @@ def _map_rule_result(rule_result) -> dict:
 
 
 def check_message_safety(message: str, use_llm: bool = True) -> dict:
-    """Check one patient message for critical signs.
+    """Проверяет одно сообщение пациента на критические признаки.
 
-    The rule filter is deterministic and needs no external services.  It runs
-    first and short-circuits on dangerous/uncertain results.  When creds are
-    configured, GigaChat is used only to catch signs the rules missed.
+    Фильтр правил детерминирован и не требует внешних сервисов. Он выполняется
+    первым и сразу завершается при dangerous. Если настроены ключи, GigaChat
+    используется только для признаков, которые правила не нашли.
     """
     if not isinstance(message, str) or not message.strip():
         return _fallback_safety("Сообщение пациента пустое.")
@@ -180,6 +183,7 @@ def check_message_safety(message: str, use_llm: bool = True) -> dict:
 
         llm_result = rag_check(message)
         data = llm_result.model_dump()
+        # uncertain от GigaChat больше не завершает сессию.
         return _safety(
             danger_status=data["danger_status"],
             urgency=data.get("urgency", "undetermined"),
@@ -194,7 +198,7 @@ def check_message_safety(message: str, use_llm: bool = True) -> dict:
 
 
 def build_answers(session) -> list[dict]:
-    """Convert persisted questions to the rag_module ``{'question','answer'}`` history."""
+    """Преобразует сохранённые вопросы в историю rag_module: question/answer."""
     return [
         {"question": q.question_text, "answer": q.answer_text.strip()}
         for q in session.questions.order_by("order_number")
@@ -203,7 +207,7 @@ def build_answers(session) -> list[dict]:
 
 
 def get_session_safety(session, use_llm: bool = False) -> dict:
-    """Aggregate safety across all answered messages; the worst status wins."""
+    """Собирает safety по всем ответам; побеждает самый тяжёлый статус."""
     answers = build_answers(session)
     if not answers:
         return _safety(
@@ -234,12 +238,11 @@ def get_session_safety(session, use_llm: bool = False) -> dict:
 
 
 def generate_next_questions(session, count: int | None = None) -> list[str]:
-    """Generate the whole batch of AI questions at once (6-10 by default).
+    """Сразу генерирует всю пачку AI-вопросов (по умолчанию 6–10).
 
-    Safety has already been checked by the caller, so the low-level generator
-    is used directly instead of running the full RAG triage six times.  Any
-    failed or duplicate generation is replaced with a built-in question so the
-    client always receives the full set.
+    Безопасность уже проверена вызывающим кодом, поэтому используется низкоуровневый
+    генератор, а не полный RAG-триаж шесть раз. Любая неудачная или дублирующаяся
+    генерация заменяется встроенным вопросом, чтобы клиент всегда получил полный набор.
     """
     count = ai_question_count() if count is None else count
     generated: list[str] = []
@@ -277,7 +280,7 @@ def generate_next_questions(session, count: int | None = None) -> list[str]:
 
 
 def generate_next_question(session) -> str:
-    """Backward-compatible single-question helper."""
+    """Обратно совместимый хелпер для одного вопроса."""
     return generate_next_questions(session, count=1)[0]
 
 
@@ -292,7 +295,7 @@ URGENCY_MAP = {
 
 
 def map_urgency(value: str | None) -> str:
-    """Map rag_module urgency to RoutingResult.Urgency."""
+    """Преобразует urgency из rag_module в RoutingResult.Urgency."""
     from routing.models import RoutingResult
 
     mapped = URGENCY_MAP.get((value or "").lower(), "PLANNED")
@@ -312,7 +315,7 @@ def to_text(value) -> str:
 
 
 def generate_recommendation(session, safety: dict) -> dict:
-    """Return a recommendation payload; never raise to the API layer."""
+    """Возвращает рекомендацию; никогда не выбрасывает исключение в API."""
     if safety["should_stop"]:
         return {
             "source": "safety_check",
@@ -359,7 +362,7 @@ def generate_recommendation(session, safety: dict) -> dict:
 
 
 def process_user_message(consultation, user_message_text: str, history: list = None) -> dict:
-    """Backward-compatible service contract used by older callers."""
+    """Обратно совместимый контракт сервиса для старых вызывающих."""
     safety = check_message_safety(user_message_text)
     return {
         "reply": safety["recommended_action"],
