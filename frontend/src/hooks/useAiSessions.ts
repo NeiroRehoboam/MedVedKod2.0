@@ -44,6 +44,7 @@ export function useAiSession(id?: string) {
       return response.data
     },
     enabled: Boolean(id),
+    gcTime: 0,
     retry: 1,
     staleTime: 60_000,
   })

@@ -1,10 +1,15 @@
 ﻿import { useCallback, useRef, useState } from "react"
 import type { PaymentType } from "@/data/payment.mock"
+import { useQueryClient } from "@tanstack/react-query"
 import type { AiSessionResponse } from "@/api/generated/models"
 import {
   useAiSessionsMessageCreate,
   useAiSessionsCompleteCreate,
   useAiSessionsQuestionsPartialUpdate,
+  getAiSessionsListQueryKey,
+  getAiSessionsRetrieveQueryKey,
+  getAiSessionsInitialQuestionRetrieveQueryKey,
+  getAiSessionsResultRetrieveQueryKey,
 } from "@/api/generated/ai-sessions/ai-sessions"
 
 export type QuestionStepType =
@@ -19,6 +24,7 @@ export function useQuestionFlow(
   completedSession = false
 ) {
   const [response, setResponse] = useState<AiSessionResponse>()
+  const queryClient = useQueryClient()
   const [step, setStep] = useState<QuestionStepType>("welcome")
   const [index, setIndex] = useState(0)
   const [drafts, setDrafts] = useState<Record<number, string>>({})
@@ -74,6 +80,18 @@ export function useQuestionFlow(
     (data: AiSessionResponse, fromSubmission = false) => {
       setResponse(data)
 
+      if (fromSubmission) {
+        void queryClient.invalidateQueries({ queryKey: getAiSessionsListQueryKey() })
+        // Активный экран уже получил актуальные данные из mutation.
+        for (const queryKey of [
+          getAiSessionsRetrieveQueryKey(String(data.session.id)),
+          getAiSessionsInitialQuestionRetrieveQueryKey(data.session.id),
+          getAiSessionsResultRetrieveQueryKey(data.session.id),
+        ]) {
+          void queryClient.invalidateQueries({ queryKey, refetchType: "none" })
+        }
+      }
+
       // Критический случай при прохождении текущего опроса.
       // Проверяем ДО обработки статуса COMPLETED.
       if (fromSubmission && data.safety.should_stop) {
@@ -104,7 +122,7 @@ export function useQuestionFlow(
         setEmergencyOpen(true)
       }
     },
-    []
+    [queryClient]
   )
 
   const handleNext = async () => {
