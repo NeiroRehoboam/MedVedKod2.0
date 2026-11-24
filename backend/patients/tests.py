@@ -3,6 +3,8 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from consultations.crypto_module import DecryptionError
+
 from .models import Patient
 
 User = get_user_model()
@@ -50,3 +52,18 @@ class PatientViewSetTests(TestCase):
         self.assertEqual(self.client.put(detail_url, {}, format='json').status_code, 405)
         self.assertEqual(self.client.patch(detail_url, {}, format='json').status_code, 405)
         self.assertEqual(self.client.delete(detail_url).status_code, 405)
+
+    def test_diagnosis_is_encrypted_at_rest(self):
+        self.patient.diagnosis = 'Артериальная гипертензия'
+        self.patient.save()
+        self.patient.refresh_from_db()
+        self.assertNotIn('Артериальная', self.patient.diagnosis_encrypted)
+        self.assertEqual(self.patient.diagnosis, 'Артериальная гипертензия')
+
+    def test_diagnosis_is_bound_to_owner(self):
+        self.patient.diagnosis = 'Секрет'
+        self.patient.save()
+        ciphertext = Patient.objects.get(pk=self.patient.pk).diagnosis_encrypted
+        self.foreign.diagnosis_encrypted = ciphertext
+        with self.assertRaises(DecryptionError):
+            self.foreign.diagnosis

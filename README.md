@@ -16,6 +16,8 @@ cp .env.example .env
 Copy-Item .env.example .env
 ```
 
+Обязательно задайте `SECRET_KEY` и `ENCRYPTION_PEPPER` — разные случайные значения, каждый генерируется командой `python -c "import secrets; print(secrets.token_urlsafe(64))"`. Без них backend не запустится.
+
 Заполните необходимые переменные окружения. Для запуска без авторизации через MAX установите:
 
 ```dotenv
