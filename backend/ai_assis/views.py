@@ -59,7 +59,7 @@ def _ai_questions(session):
 
 
 def _next_question(session) -> SessionQuestion | None:
-    unanswered = session.questions.filter(answer_text__isnull=True).order_by('order_number', 'id')
+    unanswered = session.questions.filter(answer_text_encrypted__isnull=True).order_by('order_number', 'id')
     return unanswered.filter(source=SessionQuestion.Source.SYSTEM).first() or unanswered.first()
 
 
@@ -294,7 +294,7 @@ class SendMessageView(APIView):
 
         question.answer_text = user_text
         question.answered_at = timezone.now()
-        question.save(update_fields=['answer_text', 'answered_at'])
+        question.save(update_fields=['answer_text_encrypted', 'answered_at'])
 
         # Проверяется каждый ответ, включая ответы на AI-вопросы.
         # Вся история проверяется заново, чтобы признак, пропущенный ранее,
@@ -358,7 +358,7 @@ class UpdateSessionAnswerView(APIView):
 
         question.answer_text = serializer.validated_data['answer_text']
         question.answered_at = timezone.now()
-        question.save(update_fields=['answer_text', 'answered_at'])
+        question.save(update_fields=['answer_text_encrypted', 'answered_at'])
 
         safety = choose_worst_safety(
             check_message_safety(question.answer_text, patient=session.patient),

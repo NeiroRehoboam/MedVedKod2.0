@@ -59,6 +59,17 @@ class RoutingResultApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['justification'], 'own')
 
+    def test_text_is_encrypted_at_rest(self):
+        justification, recommendations = RoutingResult.objects.values_list(
+            'justification_encrypted', 'recommendations_encrypted'
+        ).get(id=self.mine.id)
+
+        self.assertNotIn('own', justification)
+        self.assertNotIn('own', recommendations)
+        stored = RoutingResult.objects.get(id=self.mine.id)
+        self.assertEqual(stored.justification, 'own')
+        self.assertEqual(stored.recommendations, 'own')
+
     def test_write_methods_are_disabled(self):
         self.client.force_authenticate(user=self.user)
         list_url = reverse('routing-results-list')

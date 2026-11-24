@@ -191,11 +191,15 @@ def check_message_safety(message: str) -> SafetyCheckResult:
             response = client.chat.create(request)
 
         raw_response = response.messages[0].content[0].text
-        response_data = json.loads(raw_response)
-
-        llm_result = SafetyCheckLLMResponse.model_validate(
-            response_data
-        )
+        try:
+            response_data = json.loads(raw_response)
+            llm_result = SafetyCheckLLMResponse.model_validate(
+                response_data
+            )
+        except (ValueError, TypeError):
+            raise RuntimeError(
+                "Некорректный ответ GigaChat при проверке безопасности."
+            ) from None
 
         # Проверяем согласованность статуса и найденных признаков.
         if (
@@ -259,7 +263,5 @@ def check_message_safety(message: str) -> SafetyCheckResult:
         )
 
     except Exception:
-        logger.exception(
-            "Ошибка при проверке безопасности сообщения."
-        )
+        logger.warning("Ошибка при проверке безопасности сообщения.")
         return _create_uncertain_result()

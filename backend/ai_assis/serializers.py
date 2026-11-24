@@ -10,6 +10,8 @@ class BaseQuestionOptionSerializer(serializers.ModelSerializer):
 
 class SessionQuestionSerializer(serializers.ModelSerializer):
     options = serializers.SerializerMethodField()
+    question_text = serializers.CharField()
+    answer_text = serializers.CharField(allow_null=True, required=False)
 
     class Meta:
         model = SessionQuestion
@@ -32,7 +34,9 @@ class SessionListSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'status', 'status_display', 'created_at', 'summary']
 
     def get_summary(self, obj):
-        first = obj.questions.exclude(answer_text__isnull=True).exclude(answer_text='').first()
+        first = obj.questions.exclude(
+            answer_text_encrypted__isnull=True
+        ).exclude(answer_text_encrypted='').first()
         return first.answer_text[:60] + '...' if first else 'Нет ответов'
 
 

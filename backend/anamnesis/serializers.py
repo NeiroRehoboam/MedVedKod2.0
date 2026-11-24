@@ -12,6 +12,8 @@ from .models import (
 
 
 class PatientChronicDiseaseSerializer(serializers.ModelSerializer):
+    custom_name = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = PatientChronicDisease
         fields = ["id", "disease", "custom_name"]
@@ -19,6 +21,8 @@ class PatientChronicDiseaseSerializer(serializers.ModelSerializer):
 
 
 class HereditaryDiseasePatientSerializer(serializers.ModelSerializer):
+    custom_name = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = HereditaryDiseasePatient
         fields = ["id", "disease", "custom_name"]
@@ -26,6 +30,8 @@ class HereditaryDiseasePatientSerializer(serializers.ModelSerializer):
 
 
 class PatientMedicationSerializer(serializers.ModelSerializer):
+    custom_name = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = PatientMedication
         fields = [
@@ -38,6 +44,8 @@ class PatientMedicationSerializer(serializers.ModelSerializer):
 
 
 class PatientAllergySerializer(serializers.ModelSerializer):
+    custom_name = serializers.CharField(required=False, allow_blank=True)
+
     class Meta:
         model = PatientAllergy
         fields = [
@@ -49,6 +57,8 @@ class PatientAllergySerializer(serializers.ModelSerializer):
 
 
 class FullAnamnesisSerializer(serializers.ModelSerializer):
+    recent_events_notes = serializers.CharField(required=False, allow_blank=True)
+
     chronic_diseases = PatientChronicDiseaseSerializer(
         many=True,
         required=False,

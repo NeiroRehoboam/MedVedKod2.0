@@ -1,5 +1,6 @@
 
 from django.db import models
+from consultations.crypto_module import decrypt_field, encrypt_field
 from patients.models import Patient
 from dictionaries.models import (
     ChronicDisease,
@@ -33,7 +34,7 @@ class Anamnesis(models.Model):
     )
 
     # Операции и госпитализации за последний год
-    recent_events_notes = models.TextField(
+    recent_events_notes_encrypted = models.TextField(
         blank=True,
         default="",
     )
@@ -66,6 +67,18 @@ class Anamnesis(models.Model):
 
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def _encryption_identity(self):
+        return f'patient:{self.patient_id}'
+
+    @property
+    def recent_events_notes(self):
+        return decrypt_field(self.recent_events_notes_encrypted, self._encryption_identity)
+
+    @recent_events_notes.setter
+    def recent_events_notes(self, value):
+        self.recent_events_notes_encrypted = encrypt_field(value, self._encryption_identity)
+
 
 class PatientMedication(models.Model):
     class IntakeMode(models.TextChoices):
@@ -85,11 +98,19 @@ class PatientMedication(models.Model):
         blank=True,
     )
 
-    custom_name = models.CharField(
-        max_length=200,
+    custom_name_encrypted = models.CharField(
+        max_length=512,
         blank=True,
         default="",
     )
+
+    @property
+    def custom_name(self):
+        return decrypt_field(self.custom_name_encrypted, f'patient:{self.anamnesis.patient_id}')
+
+    @custom_name.setter
+    def custom_name(self, value):
+        self.custom_name_encrypted = encrypt_field(value, f'patient:{self.anamnesis.patient_id}')
 
     intake_mode = models.CharField(
         max_length=20,
@@ -112,11 +133,19 @@ class PatientAllergy(models.Model):
         blank=True,
     )
 
-    custom_name = models.CharField(
-        max_length=200,
+    custom_name_encrypted = models.CharField(
+        max_length=512,
         blank=True,
         default="",
     )
+
+    @property
+    def custom_name(self):
+        return decrypt_field(self.custom_name_encrypted, f'patient:{self.anamnesis.patient_id}')
+
+    @custom_name.setter
+    def custom_name(self, value):
+        self.custom_name_encrypted = encrypt_field(value, f'patient:{self.anamnesis.patient_id}')
 
 
 class HereditaryDiseasePatient(models.Model):
@@ -133,11 +162,19 @@ class HereditaryDiseasePatient(models.Model):
         blank=True,
     )
 
-    custom_name = models.CharField(
-        max_length=200,
+    custom_name_encrypted = models.CharField(
+        max_length=512,
         blank=True,
         default="",
     )
+
+    @property
+    def custom_name(self):
+        return decrypt_field(self.custom_name_encrypted, f'patient:{self.anamnesis.patient_id}')
+
+    @custom_name.setter
+    def custom_name(self, value):
+        self.custom_name_encrypted = encrypt_field(value, f'patient:{self.anamnesis.patient_id}')
 
 
 class PatientChronicDisease(models.Model):
@@ -154,8 +191,16 @@ class PatientChronicDisease(models.Model):
         blank=True,
     )
 
-    custom_name = models.CharField(
-        max_length=200,
+    custom_name_encrypted = models.CharField(
+        max_length=512,
         blank=True,
         default="",
     )
+
+    @property
+    def custom_name(self):
+        return decrypt_field(self.custom_name_encrypted, f'patient:{self.anamnesis.patient_id}')
+
+    @custom_name.setter
+    def custom_name(self, value):
+        self.custom_name_encrypted = encrypt_field(value, f'patient:{self.anamnesis.patient_id}')

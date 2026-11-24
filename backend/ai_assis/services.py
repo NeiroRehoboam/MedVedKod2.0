@@ -222,7 +222,7 @@ def check_message_safety(message: str, use_llm: bool = True, patient=None) -> di
         if mapped["should_stop"]:
             return mapped
     except Exception:
-        logger.exception("Rule-based safety check failed")
+        logger.warning("Rule-based safety check failed")
         return _fallback_safety("Не удалось выполнить проверку правил.")
 
     if not use_llm:
@@ -254,7 +254,7 @@ def check_message_safety(message: str, use_llm: bool = True, patient=None) -> di
             should_stop=data.get("should_stop", False),
         )
     except Exception:
-        logger.exception("LLM safety check failed, using rule-based result")
+        logger.warning("LLM safety check failed, using rule-based result")
         return mapped
 
 
@@ -412,7 +412,7 @@ def generate_recommendation(session, safety: dict) -> dict:
                 "evidence": result.get("evidence", []),
             }
     except Exception:
-        logger.exception("RAG recommendation unavailable, using safe fallback")
+        logger.warning("RAG recommendation unavailable, using safe fallback")
 
     return {
         "source": "fallback",

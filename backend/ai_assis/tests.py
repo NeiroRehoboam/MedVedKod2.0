@@ -430,3 +430,41 @@ class DeidentificationIntegrationTests(TestCase):
 
         self.assertNotIn("Анна", questions[0])
         self.assertNotIn("12.05.1990", questions[0])
+
+    def test_answer_is_encrypted_at_rest(self):
+        raw = SessionQuestion.objects.values_list(
+            "answer_text_encrypted", flat=True
+        ).get(id=self.question.id)
+
+        self.assertNotIn("Анна", raw)
+        self.assertNotIn("болит", raw)
+        self.assertEqual(
+            SessionQuestion.objects.get(id=self.question.id).answer_text,
+            self.question.answer_text,
+        )
+
+    @patch("rag_module.config.GIGACHAT_CREDENTIALS", "test-credential")
+    def test_failed_safety_check_does_not_log_patient_text(self):
+        def explode(message):
+            raise RuntimeError(f"Ошибка на тексте: {message}")
+
+        fake_module = SimpleNamespace(check_message_safety=explode)
+        with patch.dict(
+            "sys.modules",
+            {"rag_module.triage.message_safety_checker": fake_module},
+        ):
+            with self.assertLogs("ai_assis.services", level="WARNING") as captured:
+                result = ai_services.check_message_safety(
+                    "Анна Иванова, 12.05.1990, болит голова",
+                    patient=self.patient,
+                )
+
+        self.assertTrue(
+            all(
+                "Анна" not in line
+                and "Иванова" not in line
+                and "болит" not in line
+                for line in captured.output
+            )
+        )
+        self.assertEqual(result["danger_status"], "no_critical_signs_detected")
