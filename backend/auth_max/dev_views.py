@@ -1,21 +1,19 @@
-from rest_framework import status
-from django.core.exceptions import ImproperlyConfigured
-from django.db import IntegrityError
 from django.conf import settings
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.contrib.auth import login, logout, get_user_model
+from django.contrib.auth import get_user_model, login
 from drf_spectacular.utils import extend_schema
-from .core_client import get_user_by_token
-from .serializers import MaxLoginRequestSerializer, UserProfileSerializer
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
+from .serializers import UserProfileSerializer
 from patients.models import Patient
 
 User = get_user_model()
 
 
 @extend_schema(
+    exclude=True,
     tags=["Auth"],
     request=None,
     responses={200: UserProfileSerializer},
@@ -24,7 +22,7 @@ User = get_user_model()
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def demo_login(request):
-    if not settings.DEBUG:
+    if not (settings.DEBUG and settings.ENABLE_DEMO_LOGIN):
         return Response(
             {"error": "Авторизация разработчика недоступна"},
             status=status.HTTP_403_FORBIDDEN,

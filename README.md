@@ -22,7 +22,10 @@ Copy-Item .env.example .env
 
 ```dotenv
 VITE_MOCK_AUTH=true
+ENABLE_DEMO_LOGIN=True
 ```
+
+Демо-вход подключается только при `DEBUG=True` и `ENABLE_DEMO_LOGIN=True`; в проде оставьте флаг выключенным — маршрут `/api/auth/demo/` тогда отсутствует.
 
 ## 2. Сборка и запуск
 
