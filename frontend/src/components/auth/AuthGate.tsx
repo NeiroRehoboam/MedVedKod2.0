@@ -1,9 +1,14 @@
+
 import { useEffect, useRef, useState } from "react"
 import type { ReactNode } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Spinner } from "@maxhub/max-ui"
 
-import { loginWithDemo, loginWithMax, USE_MOCK_AUTH } from "@/api/auth"
+import {
+  loginWithDemo,
+  loginWithMax,
+  USE_MOCK_AUTH,
+} from "@/api/auth"
 
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 
@@ -63,7 +68,9 @@ export function AuthGate({ children }: AuthGateProps) {
     mutate()
   }, [needsLogin, mutate])
 
-  const userQuery = useCurrentUser(!needsLogin || auth.isSuccess)
+  const userQuery = useCurrentUser(
+    !needsLogin || auth.isSuccess
+  )
 
   const isLoading =
     (needsLogin && !auth.isSuccess && !auth.isError) ||
@@ -91,16 +98,8 @@ export function AuthGate({ children }: AuthGateProps) {
     return <div>Ошибка загрузки пользователя</div>
   }
 
-  if (userQuery.data) {
-    return (
-      <div className="p-5">
-        <p>Mock: {String(USE_MOCK_AUTH)}</p>
-        <p>Token: {String(Boolean(token))}</p>
-        <p>Needs login: {String(needsLogin)}</p>
-        <p>Auth success: {String(auth.isSuccess)}</p>
-        <p>User success: {String(userQuery.isSuccess)}</p>
-      </div>
-    )
+  if (!userQuery.data) {
+    return <div>Откройте приложение через MAX</div>
   }
 
   return <>{children}</>

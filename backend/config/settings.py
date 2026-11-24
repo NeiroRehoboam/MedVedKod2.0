@@ -108,3 +108,9 @@ CSRF_TRUSTED_ORIGINS = [
     "http://10.2.10.29:80",
     "https://mcode.shspu45.ru",
 ]
+
+SESSION_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SECURE = True
+
+CSRF_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SECURE = True
