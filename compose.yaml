@@ -8,6 +8,8 @@ services:
       - ./backend:/app
     env_file:
       - .env
+    depends_on:
+      - qdrant
     command: sh -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
 
   nginx:
@@ -22,3 +24,12 @@ services:
       - web
     ports:
       - "127.0.0.1:3000:80"
+
+  qdrant:
+    image: qdrant/qdrant
+    restart: unless-stopped
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+volumes:
+  qdrant_storage:

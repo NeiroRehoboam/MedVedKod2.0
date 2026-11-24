@@ -49,7 +49,7 @@ export function useAnamnesisForm(
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    // Initialize once so cache updates cannot overwrite unsaved edits.
+    // Инициализируем один раз, чтобы обновления кэша не перетирали несохранённые правки.
     if (!anamnesisQuery.isSuccess || initialized) return
 
     if (anamnesisQuery.data) {

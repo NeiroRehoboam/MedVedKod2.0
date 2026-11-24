@@ -16,10 +16,6 @@ function SheetClose({ ...props }: SheetPrimitive.Close.Props) {
   return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
 }
 
-// function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
-//   return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
-// }
-
 function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
   const container =
     typeof document !== "undefined"
@@ -80,11 +76,6 @@ function SheetContent({
                 size="xsmall"
                 
               />
-              // <Button
-              //   variant="ghost"
-              //   className="absolute top-4 right-4 bg-secondary"
-              //   size="icon-sm"
-              // />
             }
           >
             <XIcon className="size-4"

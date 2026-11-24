@@ -5,6 +5,7 @@
  * API для медицинского сервиса (пациенты, анамнез, ИИ-ассистент)
  * OpenAPI spec version: 1.0.0
  */
+import type { PaymentType } from './paymentType';
 
 export interface Patient {
   readonly id: number;
@@ -14,4 +15,7 @@ export interface Patient {
   last_name?: string;
   /** @nullable */
   birth_date?: string | null;
+  /** @nullable */
+  preferred_payment?: number | null;
+  readonly preferred_payment_detail: PaymentType;
 }

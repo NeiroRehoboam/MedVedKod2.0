@@ -8,9 +8,10 @@
 
 export interface SendMessageRequestRequest {
   /**
-     * Текст ответа
      * @minLength 1
+     * @maxLength 4000
      */
   content: string;
+  /** @minimum 1 */
   question_id?: number;
 }

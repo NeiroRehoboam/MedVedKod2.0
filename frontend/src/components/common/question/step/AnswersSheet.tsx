@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react"
 
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet"
 
-import type { Question } from "@/data/questions-patient.mock"
+import type { SessionQuestion } from "@/api/generated/models"
 import { PageDescription } from "../../typography"
 import {
   AlertDialogDescription,
@@ -13,10 +13,11 @@ import {
 type AnswersSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  questions: Question[]
+  questions: SessionQuestion[]
   answers: Record<string, string>
   currentIndex: number
   onSelect: (index: number) => void
+  isCompleted?: boolean
 }
 
 function useIsMobile() {
@@ -52,6 +53,7 @@ export function AnswersSheet({
   answers,
   currentIndex,
   onSelect,
+  isCompleted = false,
 }: AnswersSheetProps) {
   const isMobile = useIsMobile()
 
@@ -83,7 +85,7 @@ export function AnswersSheet({
           </AlertDialogTitle>
 
           <AlertDialogDescription>
-            Вернитесь к пройденным вопросам, чтобы изменить ответ.
+            Просмотрите ответы на пройденные вопросы.
           </AlertDialogDescription>
         </SheetHeader>
 
@@ -94,8 +96,9 @@ export function AnswersSheet({
 
               const isCurrent = index === currentIndex
               const isPast = index < currentIndex
-              const isFuture = index > currentIndex
-              const canNavigate = isPast
+              const hasAnswer = Boolean(answer?.trim())
+              const isFuture = !isCompleted && !hasAnswer && index > currentIndex
+              const canNavigate = !isCurrent && (isCompleted || isPast || hasAnswer)
 
               return (
                 <button
@@ -124,7 +127,7 @@ export function AnswersSheet({
                             : "text-max-text-primary!"
                       }`}
                     >
-                      {isFuture ? "Уточняющий вопрос" : question.text}
+                      {isFuture ? "Уточняющий вопрос" : question.question_text}
                     </PageDescription>
                     {/* <div
                       className={`line-clamp-2 leading-4.5 font-medium ${
@@ -142,11 +145,13 @@ export function AnswersSheet({
                       variant="description"
                       className="line-clamp-2!"
                     >
-                      {isFuture
-                        ? "Появится после вашего ответа"
-                        : isCurrent
-                          ? "Текущий вопрос"
-                          : answer?.trim() || "Нет ответа"}
+                      {isCompleted
+                        ? answer?.trim() || "Нет ответа"
+                        : isFuture
+                          ? "Появится после вашего ответа"
+                          : isCurrent
+                            ? "Текущий вопрос"
+                            : answer?.trim() || "Нет ответа"}
                     </PageDescription>
                   </div>
 

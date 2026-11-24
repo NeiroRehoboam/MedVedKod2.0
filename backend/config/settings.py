@@ -10,6 +10,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = ['*']
 
+# приложения
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -31,6 +32,7 @@ INSTALLED_APPS = [
     'rag.apps.RagConfig',
 ]
 
+# слои обработки запроса
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -43,6 +45,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 
+# шаблоны
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -60,6 +63,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# база данных
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -74,6 +78,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# локаль и время
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Asia/Yekaterinburg'
 USE_I18N = True

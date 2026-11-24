@@ -1,5 +1,6 @@
 import { ArrowUpRight } from "lucide-react"
 import { Button } from "@maxhub/max-ui"
+import type { SafetyStatus } from "@/api/generated/models"
 
 import {
   AlertDialog,
@@ -13,12 +14,14 @@ type QuestionEmergencyDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onContinue: () => void
+  safety?: SafetyStatus
 }
 
 export function QuestionEmergencyDialog({
   open,
   onOpenChange,
   onContinue,
+  safety,
 }: QuestionEmergencyDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -31,8 +34,7 @@ export function QuestionEmergencyDialog({
           </AlertDialogTitle>
 
           <AlertDialogDescription>
-            Вы упомянули боль. При некоторых симптомах важно не откладывать
-            обращение за помощью.
+            {safety?.reason}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -46,8 +48,7 @@ export function QuestionEmergencyDialog({
           </div>
 
           <p className="mt-4 text-sm leading-5 text-red-900/80">
-            При сильной боли в груди, затруднённом дыхании или потере сознания
-            немедленно вызывайте помощь.
+            {safety?.recommended_action}
           </p>
 
           <a
@@ -66,7 +67,7 @@ export function QuestionEmergencyDialog({
           stretched
           onClick={onContinue}
         >
-          Продолжить опрос
+          Перейти к результату
         </Button>
       </AlertDialogContent>
     </AlertDialog>

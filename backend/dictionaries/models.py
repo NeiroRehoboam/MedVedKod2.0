@@ -43,3 +43,13 @@ class ChronicDisease(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class PaymentType(models.Model):
+    """Приоритетный вариант оплаты пациента (ОМС, ДМС, Платно)."""
+
+    name = models.CharField(max_length=50, unique=True)
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name

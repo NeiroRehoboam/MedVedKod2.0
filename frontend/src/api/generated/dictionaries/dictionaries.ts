@@ -27,6 +27,7 @@ import type {
   ComplaintCategory,
   HereditaryDisease,
   MedicationReference,
+  PaymentType,
   Specialty
 } from '../models';
 
@@ -1301,6 +1302,216 @@ export function useDictionariesMedicationsRetrieve<TData = Awaited<ReturnType<ty
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDictionariesMedicationsRetrieveQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type dictionariesPaymentTypesListResponse200 = {
+  data: PaymentType[]
+  status: 200
+}
+
+export type dictionariesPaymentTypesListResponseSuccess = (dictionariesPaymentTypesListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type dictionariesPaymentTypesListResponse = (dictionariesPaymentTypesListResponseSuccess)
+
+export const getDictionariesPaymentTypesListUrl = () => {
+
+
+
+
+  return `/api/dictionaries/payment-types/`
+}
+
+export const dictionariesPaymentTypesList = async ( options?: Parameters<typeof customFetch>[1]): Promise<dictionariesPaymentTypesListResponse> => {
+
+  return customFetch<dictionariesPaymentTypesListResponse>(getDictionariesPaymentTypesListUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDictionariesPaymentTypesListQueryKey = () => {
+    return [
+    `/api/dictionaries/payment-types/`
+    ] as const;
+    }
+
+
+export const getDictionariesPaymentTypesListQueryOptions = <TData = Awaited<ReturnType<typeof dictionariesPaymentTypesList>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesList>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDictionariesPaymentTypesListQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof dictionariesPaymentTypesList>>> = ({ signal }) => dictionariesPaymentTypesList({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DictionariesPaymentTypesListQueryResult = NonNullable<Awaited<ReturnType<typeof dictionariesPaymentTypesList>>>
+export type DictionariesPaymentTypesListQueryError = unknown
+
+
+export function useDictionariesPaymentTypesList<TData = Awaited<ReturnType<typeof dictionariesPaymentTypesList>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof dictionariesPaymentTypesList>>,
+          TError,
+          Awaited<ReturnType<typeof dictionariesPaymentTypesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesPaymentTypesList<TData = Awaited<ReturnType<typeof dictionariesPaymentTypesList>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof dictionariesPaymentTypesList>>,
+          TError,
+          Awaited<ReturnType<typeof dictionariesPaymentTypesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesPaymentTypesList<TData = Awaited<ReturnType<typeof dictionariesPaymentTypesList>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesList>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesPaymentTypesList<TData = Awaited<ReturnType<typeof dictionariesPaymentTypesList>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesList>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDictionariesPaymentTypesListQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type dictionariesPaymentTypesRetrieveResponse200 = {
+  data: PaymentType
+  status: 200
+}
+
+export type dictionariesPaymentTypesRetrieveResponseSuccess = (dictionariesPaymentTypesRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type dictionariesPaymentTypesRetrieveResponse = (dictionariesPaymentTypesRetrieveResponseSuccess)
+
+export const getDictionariesPaymentTypesRetrieveUrl = (id: number,) => {
+
+
+
+
+  return `/api/dictionaries/payment-types/${id}/`
+}
+
+export const dictionariesPaymentTypesRetrieve = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<dictionariesPaymentTypesRetrieveResponse> => {
+
+  return customFetch<dictionariesPaymentTypesRetrieveResponse>(getDictionariesPaymentTypesRetrieveUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDictionariesPaymentTypesRetrieveQueryKey = (id: number,) => {
+    return [
+    `/api/dictionaries/payment-types/${id}/`
+    ] as const;
+    }
+
+
+export const getDictionariesPaymentTypesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDictionariesPaymentTypesRetrieveQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>> = ({ signal }) => dictionariesPaymentTypesRetrieve(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DictionariesPaymentTypesRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>>
+export type DictionariesPaymentTypesRetrieveQueryError = unknown
+
+
+export function useDictionariesPaymentTypesRetrieve<TData = Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesPaymentTypesRetrieve<TData = Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesPaymentTypesRetrieve<TData = Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDictionariesPaymentTypesRetrieve<TData = Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof dictionariesPaymentTypesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDictionariesPaymentTypesRetrieveQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

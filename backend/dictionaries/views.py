@@ -4,6 +4,7 @@ from .models import *
 from .serializers import *
 
 
+# справочники только на чтение
 @extend_schema(tags=['Dictionaries'])
 class AllergyTypeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AllergyType.objects.filter(active=True)
@@ -40,7 +41,14 @@ class ComplaintCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ComplaintCategorySerializer
 
 
+# без флага active
 @extend_schema(tags=["Dictionaries"])
 class ChronicDiseaseViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ChronicDisease.objects.all().order_by("name")
     serializer_class = ChronicDiseaseSerializer
+
+
+@extend_schema(tags=["Dictionaries"])
+class PaymentTypeViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = PaymentType.objects.filter(active=True).order_by("id")
+    serializer_class = PaymentTypeSerializer

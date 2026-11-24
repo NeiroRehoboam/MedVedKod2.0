@@ -1,334 +1,403 @@
-
-import logging
-
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from drf_spectacular.utils import extend_schema
+from patients.models import Patient
+from routing.models import RoutingResult
+from dictionaries.models import Specialty
 
-from .models import Session, SessionQuestion, BaseQuestion
+from .models import BaseQuestion, BaseQuestionOption, Session, SessionQuestion
 from .serializers import (
-    SessionListSerializer,
-    SessionDetailSerializer,
-    SessionQuestionSerializer,
+    AiSessionResponseSerializer,
+    RoutingSummarySerializer,
     SendMessageRequestSerializer,
     SendMessageResponseSerializer,
+    SessionDetailSerializer,
+    SessionListSerializer,
+    SessionQuestionSerializer,
+    SessionResultSerializer,
+    UpdateAnswerRequestSerializer,
 )
-from .services import process_user_message
-from patients.models import Patient
+from .services import (
+    check_message_safety,
+    choose_worst_safety,
+    generate_next_questions,
+    generate_recommendation,
+    get_session_safety,
+    map_urgency,
+    to_text,
+)
+
+DEFAULT_BASE_QUESTION = "Что с тобой случилось?"
+DEFAULT_BASE_OPTIONS = (
+    "Болит голова",
+    "Болит грудь",
+    "Температура",
+    "Насморк или кашель",
+    "Боль в животе",
+    "Другое",
+)
 
 
-logger = logging.getLogger(__name__)
+def _get_session(request, session_id: int) -> Session:
+    """Сессию может открыть только её владелец."""
+    patient = get_object_or_404(Patient, user=request.user)
+    return get_object_or_404(Session, id=session_id, patient=patient)
 
-AI_QUESTIONS_LIMIT = 6
+
+def _ordered_questions(session) -> list:
+    return list(session.questions.order_by('order_number', 'id'))
+
+
+def _ai_questions(session):
+    """Шесть сгенерированных вопросов хранятся в БД и пересылаются в каждом ответе."""
+    return list(session.questions.filter(source=SessionQuestion.Source.AI).order_by('order_number', 'id'))
+
+
+def _next_question(session) -> SessionQuestion | None:
+    unanswered = session.questions.filter(answer_text__isnull=True).order_by('order_number', 'id')
+    return unanswered.filter(source=SessionQuestion.Source.SYSTEM).first() or unanswered.first()
+
+
+def _session_response(
+    session,
+    status_value: str,
+    safety: dict,
+    next_question=None,
+    recommendation: dict | None = None,
+    routing=None,
+    message: str | None = None,
+    response_status: int = status.HTTP_200_OK,
+) -> Response:
+    """Единая форма ответа для всех эндпоинтов AI-сессий."""
+    data = {
+        'status': status_value,
+        'session': SessionDetailSerializer(session).data,
+        'questions': SessionQuestionSerializer(_ordered_questions(session), many=True).data,
+        'ai_questions': SessionQuestionSerializer(_ai_questions(session), many=True).data,
+        'safety': safety,
+    }
+    if next_question is not None:
+        data['next_question'] = SessionQuestionSerializer(next_question).data
+    if recommendation is not None:
+        data['recommendation'] = recommendation
+    if routing is not None:
+        data['routing'] = RoutingSummarySerializer(routing).data
+    if message is not None:
+        data['message'] = message
+    return Response(data, status=response_status)
+
+
+def _find_specialty(name: str | None):
+    if not name or not isinstance(name, str) or not name.strip():
+        return None
+    matches = Specialty.objects.filter(name__icontains=name.strip()[:100])
+    return matches.first() if matches.count() == 1 else None
+
+
+def _save_routing(session, safety: dict, recommendation: dict) -> RoutingResult:
+    urgency = safety['urgency'] if safety['should_stop'] else recommendation.get('urgency')
+    routing, _ = RoutingResult.objects.update_or_create(
+        session=session,
+        defaults={
+            'urgency': map_urgency(urgency),
+            'specialty': _find_specialty(recommendation.get('doctor')),
+            'justification': to_text(recommendation.get('justification')) or safety['reason'],
+            'recommendations': to_text(recommendation.get('recommendation')) or safety['recommended_action'],
+        },
+    )
+    return routing
+
+
+# рекомендация из сохранённой маршрутизации
+def _stored_recommendation(routing: RoutingResult) -> dict:
+    return {
+        'source': 'stored',
+        'recommendation': routing.recommendations,
+        'justification': routing.justification,
+        'urgency': routing.urgency.lower(),
+        'doctor': routing.specialty.name if routing.specialty_id else '',
+        'place': '',
+        'evidence': [],
+    }
+
+
+# результат конкретной сессии по id
+def _saved_result_response(session) -> Response:
+    routing = RoutingResult.objects.filter(session=session).first()
+    if routing is None:
+        return Response(
+            {'error': 'Результат сессии ещё не сформирован'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    return _session_response(
+        session,
+        session.status,
+        get_session_safety(session),
+        recommendation=_stored_recommendation(routing),
+        routing=routing,
+    )
+
+
+def _stop_session(session, safety: dict) -> Response:
+    """Завершает сессию при опасном ответе и сохраняет результат."""
+    recommendation = {
+        'source': 'safety_check',
+        'recommendation': safety['recommended_action'],
+        'justification': safety['reason'],
+        'urgency': safety['urgency'],
+        'doctor': '',
+        'place': '',
+        'evidence': [],
+    }
+    routing = _save_routing(session, safety, recommendation)
+    session.status = Session.Status.COMPLETED
+    session.finished_at = timezone.now()
+    session.save(update_fields=['status', 'finished_at'])
+    return _session_response(
+        session,
+        Session.Status.COMPLETED,
+        safety,
+        recommendation=recommendation,
+        routing=routing,
+        message=safety['recommended_action'],
+    )
 
 
 @extend_schema(tags=['AI Sessions'])
 class SessionViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsAuthenticated]
+
     def get_queryset(self):
-        return Session.objects.filter(
-            patient__user=self.request.user
-        ).order_by('-created_at')
+        return Session.objects.filter(patient__user=self.request.user).order_by('-created_at')
 
     def get_serializer_class(self):
-        if self.action == 'list':
-            return SessionListSerializer
-        return SessionDetailSerializer
+        return SessionListSerializer if self.action == 'list' else SessionDetailSerializer
+
+    @extend_schema(responses={200: SessionResultSerializer})
+    def retrieve(self, request, *args, **kwargs):
+        session = self.get_object()
+        routing = RoutingResult.objects.filter(session=session).first()
+        # результат при повторном открытии сессии
+        return _session_response(
+            session,
+            session.status,
+            get_session_safety(session),
+            next_question=_next_question(session),
+            recommendation=_stored_recommendation(routing) if routing else None,
+            routing=routing,
+        )
+
+
+# результат завершённой сессии (только просмотр)
+@extend_schema(tags=['AI Sessions'])
+class SessionResultView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: SessionResultSerializer})
+    def get(self, request, session_id):
+        session = _get_session(request, session_id)
+        return _saved_result_response(session)
 
 
 @extend_schema(tags=['AI Sessions'])
 class StartSessionView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    @extend_schema(
-        request=None,
-        responses={201: SessionDetailSerializer},
-    )
+    @extend_schema(request=None, responses={201: AiSessionResponseSerializer})
     def post(self, request):
         patient, _ = Patient.objects.get_or_create(user=request.user)
 
-        initial_question = BaseQuestion.objects.filter(
-            is_active=True
-        ).order_by('order').first()
+        session = Session.objects.create(patient=patient, title="Новое обращение")
 
-        if initial_question is None:
-            return Response(
-                {'error': 'Не найден начальный вопрос анкеты.'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        if not BaseQuestion.objects.filter(is_active=True).exists():
+            base = BaseQuestion.objects.create(
+                text=DEFAULT_BASE_QUESTION,
+                order=1,
+                is_multiple_choice=True,
+            )
+            for index, option in enumerate(DEFAULT_BASE_OPTIONS, start=1):
+                BaseQuestionOption.objects.create(question=base, text=option, order=index)
+
+        questions = BaseQuestion.objects.filter(is_active=True).order_by('order')
+        for q in questions:
+            SessionQuestion.objects.create(
+                session=session,
+                question_text=q.text,
+                order_number=q.order,
+                source=SessionQuestion.Source.SYSTEM,
+                allow_custom_answer=not q.is_multiple_choice,
             )
 
-        session = Session.objects.create(
-            patient=patient,
-            title='Новое обращение',
+        return _session_response(
+            session,
+            Session.Status.IN_PROGRESS,
+            get_session_safety(session),
+            next_question=_next_question(session),
+            response_status=status.HTTP_201_CREATED,
         )
 
-        SessionQuestion.objects.create(
-            session=session,
-            question_text=initial_question.text,
-            order_number=0,
-            source=SessionQuestion.Source.SYSTEM,
-            allow_custom_answer=True,
-        )
 
-        return Response(
-            SessionDetailSerializer(session).data,
-            status=status.HTTP_201_CREATED,
+@extend_schema(tags=['AI Sessions'])
+class InitialQuestionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: AiSessionResponseSerializer})
+    def get(self, request, session_id):
+        session = _get_session(request, session_id)
+        return _session_response(
+            session,
+            session.status,
+            get_session_safety(session),
+            next_question=_next_question(session),
         )
 
 
 @extend_schema(tags=['AI Sessions'])
 class SendMessageView(APIView):
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         request=SendMessageRequestSerializer,
         responses={200: SendMessageResponseSerializer},
     )
     def post(self, request, session_id):
-        session = get_object_or_404(
-            Session,
-            id=session_id,
-            patient__user=request.user,
-        )
-
+        session = _get_session(request, session_id)
         if session.status != Session.Status.IN_PROGRESS:
-            return Response(
-                {'error': 'Сессия уже завершена.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({'error': 'Сессия завершена'}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = SendMessageRequestSerializer(data=request.data)
-
         if not serializer.is_valid():
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        user_text = serializer.validated_data['content'].strip()
+        user_text = serializer.validated_data['content']
         question_id = serializer.validated_data.get('question_id')
 
-        if not user_text:
+        if question_id is not None:
+            question = session.questions.filter(id=question_id).first()
+            if question is None:
+                return Response({'error': 'Вопрос не относится к этой сессии'}, status=status.HTTP_400_BAD_REQUEST)
+            if question.answer_text not in (None, ''):
+                return Response({'error': 'На вопрос уже дан ответ'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            question = _next_question(session)
+
+        if question is None:
             return Response(
-                {'error': 'Ответ не может быть пустым.'},
+                {'error': 'Все вопросы отвечены. Вызовите /complete/ для завершения опроса.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Находим вопрос, на который пользователь отвечает.
-        if question_id is not None:
-            question = session.questions.filter(id=question_id).first()
+        question.answer_text = user_text
+        question.answered_at = timezone.now()
+        question.save(update_fields=['answer_text', 'answered_at'])
 
-            if question is None:
-                return Response(
-                    {'error': 'Вопрос не принадлежит этой сессии.'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-        else:
-            question = session.questions.filter(
-                answer_text__isnull=True
-            ).order_by('order_number').first()
-
-        # Поддержка повторной отправки запроса после сбоя GigaChat.
-        if question is None:
-            question = session.questions.order_by(
-                '-order_number'
-            ).first()
-
-            if question is None or question.answer_text != user_text:
-                return Response(
-                    {'error': 'Не найден вопрос для этого ответа.'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-        elif question.answer_text is not None:
-            if question.answer_text != user_text:
-                return Response(
-                    {'error': 'На этот вопрос уже был дан другой ответ.'},
-                    status=status.HTTP_409_CONFLICT,
-                )
-
-        else:
-            question.answer_text = user_text
-            question.answered_at = timezone.now()
-            question.save(update_fields=['answer_text', 'answered_at'])
-
-        # Если следующий вопрос уже создан, повторно его не генерируем.
-        pending_question = session.questions.filter(
-            answer_text__isnull=True
-        ).order_by('order_number').first()
-
-        if pending_question is not None:
-            return Response({
-                'status': 'IN_PROGRESS',
-                'next_question': SessionQuestionSerializer(
-                    pending_question
-                ).data,
-                'session': SessionDetailSerializer(session).data,
-            })
-
-        # История в формате, который ожидает rag_module.
-        history = [
-            {
-                'question': item.question_text,
-                'answer': item.answer_text,
-            }
-            for item in session.questions.filter(
-                answer_text__isnull=False
-            ).exclude(
-                answer_text=''
-            ).order_by('order_number')
-        ]
-
-        answered_ai_count = session.questions.filter(
-            source=SessionQuestion.Source.AI,
-            answer_text__isnull=False,
-        ).count()
-
-        # Импортируем RAG-функции только при необходимости.
-        from rag_module import (
-            generate_next_question,
-            TriageBlockedError,
+        # Проверяется каждый ответ, включая ответы на AI-вопросы.
+        # Вся история проверяется заново, чтобы признак, пропущенный ранее,
+        # всё равно остановил опрос.
+        safety = choose_worst_safety(
+            check_message_safety(user_text),
+            get_session_safety(session, use_llm=False),
         )
 
-        # Генерация шести дополнительных вопросов через GigaChat.
-        if answered_ai_count < AI_QUESTIONS_LIMIT:
-            try:
-                generated = generate_next_question(history)
+        if safety['should_stop']:
+            return _stop_session(session, safety)
 
-                question_text = generated['question']
-                options = generated.get('options', [])
-
-                last_order = session.questions.order_by(
-                    '-order_number'
-                ).first().order_number
-
-                next_question = SessionQuestion.objects.create(
+        # Генерируем шесть следующих вопросов один раз, затем просто пересылаем
+        # сохранённые копии при каждом следующем ответе (без отдельного эндпоинта).
+        if not _ai_questions(session):
+            max_order = max([q.order_number for q in _ordered_questions(session)] or [0])
+            SessionQuestion.objects.bulk_create([
+                SessionQuestion(
                     session=session,
-                    question_text=question_text,
-                    order_number=last_order + 1,
+                    question_text=text,
+                    order_number=max_order + index,
                     source=SessionQuestion.Source.AI,
                     allow_custom_answer=True,
-                    options=options,
                 )
+                for index, text in enumerate(generate_next_questions(session), start=1)
+            ])
 
-                return Response({
-                    'status': 'IN_PROGRESS',
-                    'next_question': SessionQuestionSerializer(
-                        next_question
-                    ).data,
-                    'session': SessionDetailSerializer(session).data,
-                })
+        ai_questions = _ai_questions(session)
+        next_question = next(
+            (q for q in ai_questions if q.answer_text in (None, '')),
+            None,
+        ) or _next_question(session)
 
-            except TriageBlockedError as error:
-                triage_result = error.result
+        return _session_response(
+            session,
+            Session.Status.IN_PROGRESS,
+            safety,
+            next_question=next_question,
+        )
 
-                if hasattr(triage_result, 'model_dump'):
-                    triage_data = triage_result.model_dump()
-                else:
-                    triage_data = triage_result
 
-                session.status = Session.Status.COMPLETED
-                session.finished_at = timezone.now()
-                session.save(update_fields=['status', 'finished_at'])
+# исправление ответа доступно, пока сессия не завершена
+@extend_schema(tags=['AI Sessions'])
+class UpdateSessionAnswerView(APIView):
+    permission_classes = [IsAuthenticated]
 
-                return Response({
-                    'status': 'COMPLETED',
-                    'message': triage_data.get(
-                        'message',
-                        'Обнаружены признаки, требующие медицинской оценки.',
-                    ),
-                    'triage': triage_data,
-                    'session': SessionDetailSerializer(session).data,
-                })
+    @extend_schema(
+        request=UpdateAnswerRequestSerializer,
+        responses={200: SendMessageResponseSerializer},
+    )
+    def patch(self, request, session_id, question_id):
+        session = _get_session(request, session_id)
+        if session.status != Session.Status.IN_PROGRESS:
+            return Response({'error': 'Сессия завершена'}, status=status.HTTP_400_BAD_REQUEST)
 
-            except Exception:
-                logger.exception(
-                    'Ошибка генерации следующего вопроса для сессии %s',
-                    session.id,
-                )
-                return Response(
-                    {
-                        'error': (
-                            'Не удалось сформировать следующий вопрос. '
-                            'Попробуйте отправить ответ повторно.'
-                        )
-                    },
-                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
-                )
+        question = get_object_or_404(SessionQuestion, id=question_id, session=session)
 
-        # После шести ответов ИИ запускаем итоговый RAG.
-        try:
-            ai_response = process_user_message(
-                session,
-                user_text,
-                history,
-            )
+        serializer = UpdateAnswerRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            recommendation = ai_response['recommendation']
+        question.answer_text = serializer.validated_data['answer_text']
+        question.answered_at = timezone.now()
+        question.save(update_fields=['answer_text', 'answered_at'])
 
-            session.status = Session.Status.COMPLETED
-            session.finished_at = timezone.now()
-            session.save(update_fields=['status', 'finished_at'])
+        safety = choose_worst_safety(
+            check_message_safety(question.answer_text),
+            get_session_safety(session, use_llm=False),
+        )
+        if safety['should_stop']:
+            return _stop_session(session, safety)
 
-            return Response({
-                'status': 'COMPLETED',
-                'message': ai_response['reply'],
-                'recommendation': recommendation,
-                'session': SessionDetailSerializer(session).data,
-            })
+        return _session_response(
+            session,
+            Session.Status.IN_PROGRESS,
+            safety,
+            next_question=_next_question(session),
+        )
 
-        except TriageBlockedError as error:
-            triage_result = error.result
 
-            if hasattr(triage_result, 'model_dump'):
-                triage_data = triage_result.model_dump()
-            else:
-                triage_data = triage_result
+@extend_schema(tags=['AI Sessions'])
+class CompleteSessionView(APIView):
+    permission_classes = [IsAuthenticated]
 
-            session.status = Session.Status.COMPLETED
-            session.finished_at = timezone.now()
-            session.save(update_fields=['status', 'finished_at'])
+    @extend_schema(responses={200: AiSessionResponseSerializer})
+    def post(self, request, session_id):
+        session = _get_session(request, session_id)
 
-            return Response({
-                'status': 'COMPLETED',
-                'message': triage_data.get(
-                    'message',
-                    'Необходимо обратиться за медицинской помощью.',
-                ),
-                'triage': triage_data,
-                'session': SessionDetailSerializer(session).data,
-            })
+        if not any(q.answer_text for q in _ordered_questions(session)):
+            return Response({'error': 'Нет ответов пациента'}, status=status.HTTP_400_BAD_REQUEST)
 
-        except ValueError as error:
-            logger.warning(
-                'Недостаточно данных для рекомендации, сессия %s: %s',
-                session.id,
-                error,
-            )
-            return Response(
-                {
-                    'error': (
-                        'Не удалось сформировать рекомендацию '
-                        'из-за недостатка данных.'
-                    ),
-                    'details': str(error),
-                },
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            )
+        safety = get_session_safety(session, use_llm=True)
+        recommendation = generate_recommendation(session, safety)
+        routing = _save_routing(session, safety, recommendation)
 
-        except Exception:
-            logger.exception(
-                'Ошибка формирования рекомендации для сессии %s',
-                session.id,
-            )
-            return Response(
-                {
-                    'error': (
-                        'Не удалось сформировать рекомендацию. '
-                        'Попробуйте повторить запрос.'
-                    )
-                },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
+        session.status = Session.Status.COMPLETED
+        session.finished_at = session.finished_at or timezone.now()
+        session.save(update_fields=['status', 'finished_at'])
+
+        return _session_response(
+            session,
+            Session.Status.COMPLETED,
+            safety,
+            recommendation=recommendation,
+            routing=routing,
+        )

@@ -1,9 +1,9 @@
 """
-ASGI config for config project.
+ASGI-конфигурация проекта config.
 
-It exposes the ASGI callable as a module-level variable named ``application``.
+Доступный объект ASGI лежит в переменной ``application`` на уровне модуля.
 
-For more information on this file, see
+Подробнее:
 https://docs.djangoproject.com/en/6.1/howto/deployment/asgi/
 """
 
