@@ -14,11 +14,12 @@ import { DoctorSignature, PageDescription, PageTitle } from "../../typography"
 
 type Urgency = "emergency" | "urgent" | "planned" | "self_care" | "undetermined"
 
-
 type QuestionFinishProps = {
   result?: AiSessionResponse
   payment?: PaymentType
+  onRestart: () => void
 }
+
 const urgencyConfig = {
   undetermined: {
     label: "Не определена",
@@ -60,20 +61,46 @@ const urgencyConfig = {
   }
 >
 
-export function QuestionFinish({ result: response }: QuestionFinishProps) {
+export function QuestionFinish({
+  result: response,
+  onRestart,
+}: QuestionFinishProps) {
   const recommendation = response?.recommendation
-  const text = (key: string) => typeof recommendation?.[key] === "string" ? recommendation[key] : ""
-  const rawUrgency = response?.routing?.urgency || text("urgency") || response?.safety.urgency || ""
+  const text = (key: string) =>
+    typeof recommendation?.[key] === "string" ? recommendation[key] : ""
+  const rawUrgency =
+    response?.routing?.urgency ||
+    text("urgency") ||
+    response?.safety.urgency ||
+    ""
   const normalized = rawUrgency.toLowerCase()
-  const urgencyKey: Urgency = response?.safety.should_stop || normalized === "emergency"
-    ? "emergency" : normalized === "urgent" ? "urgent" : normalized === "self_help" || normalized === "self_care" ? "self_care" : normalized === "planned" ? "planned" : "undetermined"
+  const urgencyKey: Urgency =
+    response?.safety.should_stop || normalized === "emergency"
+      ? "emergency"
+      : normalized === "urgent"
+        ? "urgent"
+        : normalized === "self_help" || normalized === "self_care"
+          ? "self_care"
+          : normalized === "planned"
+            ? "planned"
+            : "undetermined"
   const result = {
     urgency: urgencyKey,
-    recommendation: response?.routing?.recommendations || text("recommendation") || response?.safety.recommended_action,
+    recommendation:
+      response?.routing?.recommendations ||
+      text("recommendation") ||
+      response?.safety.recommended_action,
     specialistDescription: text("doctor"),
     place: text("place"),
-    symptoms: Array.isArray(recommendation?.evidence) ? recommendation.evidence.filter((item): item is string => typeof item === "string") : [],
-    reason: response?.routing?.justification || text("justification") || response?.safety.reason,
+    symptoms: Array.isArray(recommendation?.evidence)
+      ? recommendation.evidence.filter(
+          (item): item is string => typeof item === "string"
+        )
+      : [],
+    reason:
+      response?.routing?.justification ||
+      text("justification") ||
+      response?.safety.reason,
   }
   const navigate = useNavigate()
   const urgency = urgencyConfig[result.urgency]
@@ -202,13 +229,12 @@ export function QuestionFinish({ result: response }: QuestionFinishProps) {
         >
           На главную
         </Button>
-
         <Button
           type="button"
           size="large"
           variant="secondary"
           stretched
-          onClick={() => navigate("/question")}
+          onClick={onRestart}
         >
           Новое обращение
         </Button>

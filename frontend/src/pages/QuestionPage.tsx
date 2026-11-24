@@ -38,7 +38,11 @@ export function QuestionPage() {
   const initializedSession = useRef<string | undefined>(undefined)
 
   useEffect(() => {
-    if (initialQuestionData && sessionId && initializedSession.current !== sessionId) {
+    if (
+      initialQuestionData &&
+      sessionId &&
+      initializedSession.current !== sessionId
+    ) {
       initializedSession.current = sessionId
       applyResponse(initialQuestionData)
     }
@@ -48,12 +52,20 @@ export function QuestionPage() {
   const createdSessionId = useRef<string | null>(null)
   const creatingSession = useRef(false)
 
-
   const goHome = () => navigate("/home")
 
   const handleExit = () => {
     flow.resetFlow()
     goHome()
+  }
+
+  const handleRestart = () => {
+    createdSessionId.current = null
+    creatingSession.current = false
+
+    flow.resetFlow()
+
+    navigate("/question", { replace: true })
   }
 
   const handleAnamnesisContinue = async () => {
@@ -107,7 +119,17 @@ export function QuestionPage() {
 
       case "questions":
         if (initialQuestionQuery.isError) {
-          return <p>Не удалось загрузить вопрос. <button type="button" onClick={() => void initialQuestionQuery.refetch()}>Попробовать снова</button></p>
+          return (
+            <p>
+              Не удалось загрузить вопрос.{" "}
+              <button
+                type="button"
+                onClick={() => void initialQuestionQuery.refetch()}
+              >
+                Попробовать снова
+              </button>
+            </p>
+          )
         }
 
         if (!flow.question) {
@@ -131,7 +153,13 @@ export function QuestionPage() {
         )
 
       case "finished":
-        return <QuestionFinish result={flow.response} payment={flow.payment ?? undefined} />
+        return (
+          <QuestionFinish
+            result={flow.response}
+            payment={flow.payment ?? undefined}
+            onRestart={handleRestart}
+          />
+        )
     }
   }
 
