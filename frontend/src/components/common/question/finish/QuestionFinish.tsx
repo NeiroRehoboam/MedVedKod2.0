@@ -26,6 +26,7 @@ export type TriageResult = {
 type QuestionFinishProps = {
   result?: TriageResult
   payment?: PaymentType
+  onRestart: () => void
 }
 const urgencyConfig = {
   emergency: {
@@ -79,7 +80,10 @@ const demoResult: TriageResult = {
     "Это демонстрационный пример оформления результата. Реальная срочность и маршрут обращения должны определяться на основании ответов пациента и проверенных правил маршрутизации.",
 }
 
-export function QuestionFinish({ result = demoResult }: QuestionFinishProps) {
+export function QuestionFinish({
+  result = demoResult,
+  onRestart,
+}: QuestionFinishProps) {
   const navigate = useNavigate()
   const urgency = urgencyConfig[result.urgency]
 
@@ -213,7 +217,7 @@ export function QuestionFinish({ result = demoResult }: QuestionFinishProps) {
           size="large"
           variant="secondary"
           stretched
-          onClick={() => navigate("/question")}
+          onClick={onRestart}
         >
           Новое обращение
         </Button>

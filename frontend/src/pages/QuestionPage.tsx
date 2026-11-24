@@ -34,6 +34,14 @@ export function QuestionPage() {
     goHome()
   }
 
+  const handleRestart = () => {
+    createdSessionId.current = null
+    creatingSession.current = false
+
+    flow.resetFlow()
+
+    navigate("/question", { replace: true })
+  }
   const handleAnamnesisContinue = async () => {
     if (sessionId || createdSessionId.current) {
       flow.setStep("questions")
@@ -46,7 +54,18 @@ export function QuestionPage() {
 
     try {
       const response = await startSession.mutateAsync()
-      const id = String(response.data.id)
+
+      const data = response.data as unknown as {
+        session: {
+          id: number
+        }
+      }
+
+      if (data.session?.id == null) {
+        throw new Error("Бэкенд не вернул ID сессии")
+      }
+
+      const id = String(data.session.id)
 
       createdSessionId.current = id
 
@@ -96,7 +115,12 @@ export function QuestionPage() {
         )
 
       case "finished":
-        return <QuestionFinish payment={flow.payment ?? undefined} />
+        return (
+          <QuestionFinish
+            onRestart={handleRestart}
+            payment={flow.payment ?? undefined}
+          />
+        )
     }
   }
 
