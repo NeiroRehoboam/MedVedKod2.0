@@ -20,6 +20,7 @@ def _required_env(name):
 SECRET_KEY = _required_env('SECRET_KEY')
 ENCRYPTION_PEPPER = _required_env('ENCRYPTION_PEPPER')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
+ENABLE_DEMO_LOGIN = os.getenv('ENABLE_DEMO_LOGIN', 'False') == 'True'
 ALLOWED_HOSTS = ['*']
 
 # приложения
