@@ -1,5 +1,5 @@
 import { useRef, useState } from "react"
-import { Textarea } from "@maxhub/max-ui"
+import { Spinner, Textarea } from "@maxhub/max-ui"
 
 import type { QuestionFlow } from "@/hooks/useQuestionFlow"
 
@@ -41,12 +41,23 @@ export function QuestionStep({ flow }: QuestionStepProps) {
       <section className="flex min-h-0 w-full flex-1 flex-col">
         {/* Карточка вопроса */}
         <div className="flex flex-1 flex-col justify-center py-5">
-          <QuestionCard
-            key={question.id}
-            question={question}
-            answer={answer}
-            onAnswer={updateAnswer}
-          />
+          {flow.isPending ? (
+            <div
+              className="flex items-center justify-center"
+              role="status"
+              aria-label="Загрузка вопроса"
+            >
+              <Spinner className="size-8" />
+            </div>
+          ) : (
+            <QuestionCard
+              key={question.id}
+              question={question}
+              answer={answer}
+              onAnswer={updateAnswer}
+              readOnly={flow.readOnly}
+            />
+          )}
         </div>
 
         {/* Ответ и навигация */}
@@ -73,7 +84,8 @@ export function QuestionStep({ flow }: QuestionStepProps) {
                 className="min-h-30 p-1"
               />
 
-              <div className="absolute right-3 bottom-3">
+              {!flow.readOnly && (
+                <div className="absolute right-3 bottom-3">
                 <VoiceInput
                   key={question.id}
                   onListeningChange={(listening) => {
@@ -89,12 +101,13 @@ export function QuestionStep({ flow }: QuestionStepProps) {
                     updateAnswer([base, text.trim()].filter(Boolean).join(" "))
                   }}
                 />
-              </div>
+                </div>
+              )}
             </div>
           </div>
 
           <QuestionNavigation
-            canBack={!isListening && !flow.isPending && !flow.response?.safety.should_stop}
+            canBack={!isListening && !flow.isPending && (flow.isCompleted ? index > 0 : !flow.response?.safety.should_stop)}
             canNext={canNext && !isListening}
             isLast={isLast}
             canSkip={false}
@@ -106,9 +119,8 @@ export function QuestionStep({ flow }: QuestionStepProps) {
               }
             }}
           />
-          {flow.isPending && <p role="status">Обрабатываем ответ...</p>}
           {flow.error && <p role="alert">{flow.error}</p>}
-          {flow.response?.safety.should_stop && !emergencyOpen && (
+          {!flow.isCompleted && flow.response?.safety.should_stop && !emergencyOpen && (
             <div>
               <p role="alert">{flow.response.safety.recommended_action}</p>
               <button type="button" onClick={continueAfterEmergency}>Перейти к результату</button>
@@ -124,6 +136,7 @@ export function QuestionStep({ flow }: QuestionStepProps) {
         answers={answers}
         currentIndex={index}
         onSelect={selectQuestion}
+        isCompleted={flow.isCompleted}
       />
 
       <QuestionEmergencyDialog

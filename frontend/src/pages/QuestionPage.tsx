@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { Spinner } from "@maxhub/max-ui"
 
 import {
   QuestionAnamnesis,
@@ -23,18 +24,19 @@ export function QuestionPage() {
   const navigate = useNavigate()
   const { sessionId } = useParams<{ sessionId: string }>()
 
-  const flow = useQuestionFlow(sessionId)
   const startSession = useStartAiSession()
   const sessionQuery = useAiSession(sessionId)
+  const isCompleted = sessionQuery.data?.session.status === "COMPLETED"
+  const flow = useQuestionFlow(sessionId, isCompleted)
 
   const initialQuestionQuery = useInitialQuestion(
     sessionId,
-    flow.step === "questions"
+    flow.step === "questions" && sessionQuery.isSuccess && !flow.isCompleted
   )
 
-  const initialQuestionData = initialQuestionQuery.data?.data
+  const initialQuestionData = isCompleted ? sessionQuery.data : initialQuestionQuery.data?.data
 
-  const { applyResponse } = flow
+  const { applyResponse, setStep } = flow
   const initializedSession = useRef<string | undefined>(undefined)
 
   useEffect(() => {
@@ -45,8 +47,9 @@ export function QuestionPage() {
     ) {
       initializedSession.current = sessionId
       applyResponse(initialQuestionData)
+      if (isCompleted) setStep("questions")
     }
-  }, [initialQuestionData, sessionId, applyResponse])
+  }, [initialQuestionData, sessionId, applyResponse, isCompleted, setStep])
 
   const isExistingSession = Boolean(sessionId)
   const createdSessionId = useRef<string | null>(null)
@@ -118,7 +121,7 @@ export function QuestionPage() {
         )
 
       case "questions":
-        if (initialQuestionQuery.isError) {
+        if (!flow.isCompleted && initialQuestionQuery.isError) {
           return (
             <p>
               Не удалось загрузить вопрос.{" "}
@@ -133,7 +136,15 @@ export function QuestionPage() {
         }
 
         if (!flow.question) {
-          return <p>Загружаем вопрос...</p>
+          return (
+            <div
+              className="flex flex-1 items-center justify-center"
+              role="status"
+              aria-label="Загрузка вопроса"
+            >
+              <Spinner className="size-8" />
+            </div>
+          )
         }
 
         return <QuestionStep flow={flow} />

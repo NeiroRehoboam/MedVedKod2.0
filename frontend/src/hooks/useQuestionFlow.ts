@@ -5,7 +5,7 @@ import { useAiSessionsMessageCreate, useAiSessionsCompleteCreate } from "@/api/g
 
 export type QuestionStepType = "welcome" | "anamnesis" | "questions" | "payment" | "finished"
 
-export function useQuestionFlow(sessionId?: string) {
+export function useQuestionFlow(sessionId?: string, completedSession = false) {
   const [response, setResponse] = useState<AiSessionResponse>()
   const [step, setStep] = useState<QuestionStepType>("welcome")
   const [index, setIndex] = useState(0)
@@ -20,24 +20,31 @@ export function useQuestionFlow(sessionId?: string) {
   const questions = response?.questions ?? []
   const question = questions[index]
   const answers = Object.fromEntries(questions.map((item) => [item.id, item.answer_text ?? ""]))
+  const isCompleted = completedSession || response?.session.status === "COMPLETED"
   const answered = Boolean(question?.answer_text?.trim())
-  const answer = answered ? question.answer_text ?? "" : drafts[question?.id] ?? ""
-  const stopped = response?.safety.should_stop === true
+  const answer = isCompleted || answered ? question?.answer_text ?? "" : drafts[question?.id] ?? ""
+  const stopped = !isCompleted && response?.safety.should_stop === true
   const isPending = sendMessage.isPending || complete.isPending
-  const isLast = Boolean(response && !response.next_question)
-  const canNext = !stopped && !isPending && Boolean(question && answer.trim())
+  const isLast = !isCompleted && Boolean(response && !response.next_question)
+  const canNext = !stopped && !isPending && (isCompleted
+    ? index < questions.length - 1
+    : Boolean(question && answer.trim()))
 
   const applyResponse = useCallback((data: AiSessionResponse) => {
     setResponse(data)
-    const nextIndex = data.next_question
+    const nextIndex = data.session.status === "COMPLETED" ? 0 : data.next_question
       ? data.questions.findIndex((item) => item.id === data.next_question?.id)
       : data.questions.length - 1
     setIndex(Math.max(0, nextIndex))
-    if (data.safety.should_stop) setEmergencyOpen(true)
+    if (data.session.status !== "COMPLETED" && data.safety.should_stop) setEmergencyOpen(true)
   }, [])
 
   const handleNext = async () => {
     if (!canNext || busy.current || !sessionId) return
+    if (isCompleted) {
+      setIndex(index + 1)
+      return
+    }
     busy.current = true
     setError(null)
     try {
@@ -51,6 +58,10 @@ export function useQuestionFlow(sessionId?: string) {
         applyResponse(current)
       }
       if (!current || current.safety.should_stop) return
+      if (current.session.status === "COMPLETED") {
+        setStep("payment")
+        return
+      }
       if (current.next_question) {
         setIndex(Math.max(0, current.questions.findIndex((item) => item.id === current.next_question?.id)))
         return
@@ -85,15 +96,15 @@ export function useQuestionFlow(sessionId?: string) {
   return {
     step, setStep, index, question, answer, answers, questions,
     updateAnswer: (value: string) => {
-      if (!busy.current && !stopped && !answered && question) {
+      if (!busy.current && !isCompleted && !stopped && !answered && question) {
         setDrafts((prev) => ({ ...prev, [question.id]: value }))
       }
     },
-    isLast, canNext, handleNext,
+    isCompleted, isLast, canNext, handleNext,
     handleBack: () => {
       if (busy.current || stopped) return
       if (index > 0) selectQuestion(index - 1)
-      else setStep("anamnesis")
+      else if (!isCompleted) setStep("anamnesis")
     },
     payment, setPayment, sheetOpen, setSheetOpen, selectQuestion,
     emergencyOpen, setEmergencyOpen,
@@ -102,7 +113,7 @@ export function useQuestionFlow(sessionId?: string) {
       setStep("finished")
     },
     resetFlow, applyResponse, response, isPending, error,
-    readOnly: answered || stopped || isPending,
+    readOnly: isCompleted || answered || stopped || isPending,
   }
 }
 

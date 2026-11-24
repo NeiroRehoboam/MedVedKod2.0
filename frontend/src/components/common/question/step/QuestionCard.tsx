@@ -9,12 +9,14 @@ type QuestionCardProps = {
   question: SessionQuestion
   answer: string
   onAnswer: (value: string) => void
+  readOnly?: boolean
 }
 
 export function QuestionCard({
   question,
   answer,
   onAnswer,
+  readOnly = false,
 }: QuestionCardProps) {
   const headingRef = useRef<HTMLHeadingElement>(null)
   const options = Array.isArray(question.options) ? question.options : []
@@ -60,6 +62,7 @@ export function QuestionCard({
                   key={option.id}
                   type="button"
                   aria-pressed={selected}
+                  disabled={readOnly}
                   onClick={() => onAnswer(option.text)}
                   className={cn(
                     "inline-flex min-h-10 items-center justify-center",
