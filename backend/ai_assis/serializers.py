@@ -93,5 +93,11 @@ class SendMessageResponseSerializer(AiSessionResponseSerializer):
     pass
 
 
+class UpdateAnswerRequestSerializer(serializers.Serializer):
+    """Запрос на исправление уже данного ответа в незавершённой сессии."""
+
+    answer_text = serializers.CharField(max_length=4000, trim_whitespace=True)
+
+
 class CompleteRequestSerializer(serializers.Serializer):
     """Эндпоинт завершения намеренно не принимает данные."""

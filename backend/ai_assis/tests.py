@@ -258,5 +258,84 @@ class AiSessionApiTests(TestCase):
             404,
         )
 
+    @patch("ai_assis.views.generate_next_questions", return_value=[f"Вопрос {i}?" for i in range(1, 7)])
+    def test_edit_answer_updates_stored_answer(self, _generate):
+        data = self._start()
+        session_id = data["session"]["id"]
+        question_id = data["questions"][0]["id"]
+        safe = ai_services._safety(
+            danger_status="no_critical_signs_detected",
+            urgency="undetermined",
+            reason="Критических признаков не найдено.",
+            recommended_action="Продолжайте опрос.",
+            should_stop=False,
+        )
+        with patch("ai_assis.views.check_message_safety", return_value=safe), patch(
+            "ai_assis.views.get_session_safety", return_value=safe
+        ):
+            response = self.client.post(
+                reverse("send-message", args=[session_id]),
+                {"content": "Болит поясница", "question_id": question_id},
+                format="json",
+            )
+            self.assertEqual(response.status_code, 200)
+            edited = self.client.patch(
+                reverse("session-answer-update", args=[session_id, question_id]),
+                {"answer_text": "Болит голова"},
+                format="json",
+            )
+
+        self.assertEqual(edited.status_code, 200)
+        self.assertEqual(edited.data["status"], "IN_PROGRESS")
+        self.assertEqual(
+            Session.objects.get(id=session_id).questions.get(id=question_id).answer_text,
+            "Болит голова",
+        )
+        self.assertFalse(RoutingResult.objects.filter(session_id=session_id).exists())
+
+    def test_edit_answer_rejected_for_completed_session(self):
+        session_id = self._start()["session"]["id"]
+        session = Session.objects.get(id=session_id)
+        session.status = Session.Status.COMPLETED
+        session.save(update_fields=['status'])
+
+        response = self.client.patch(
+            reverse("session-answer-update", args=[session_id, session.questions.first().id]),
+            {"answer_text": "Другое"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_other_user_cannot_edit_answer(self):
+        data = self._start()
+        session_id = data["session"]["id"]
+        question_id = data["questions"][0]["id"]
+        other = User.objects.create_user(max_id="other-user-edit", password=None)
+        client = APIClient()
+        client.force_authenticate(user=other)
+
+        response = client.patch(
+            reverse("session-answer-update", args=[session_id, question_id]),
+            {"answer_text": "Чужой текст"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            Session.objects.get(id=session_id).questions.get(id=question_id).answer_text,
+            None,
+        )
+
+    def test_edit_answer_rejects_empty_text(self):
+        data = self._start()
+        session_id = data["session"]["id"]
+        question_id = data["questions"][0]["id"]
+
+        response = self.client.patch(
+            reverse("session-answer-update", args=[session_id, question_id]),
+            {"answer_text": ""},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+
     def test_anonymous_is_forbidden(self):
         self.assertEqual(APIClient().post(reverse("start-session")).status_code, 403)

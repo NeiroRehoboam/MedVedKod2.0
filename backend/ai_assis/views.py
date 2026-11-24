@@ -20,6 +20,7 @@ from .serializers import (
     SessionListSerializer,
     SessionQuestionSerializer,
     SessionResultSerializer,
+    UpdateAnswerRequestSerializer,
 )
 from .services import (
     check_message_safety,
@@ -139,6 +140,31 @@ def _saved_result_response(session) -> Response:
         get_session_safety(session),
         recommendation=_stored_recommendation(routing),
         routing=routing,
+    )
+
+
+def _stop_session(session, safety: dict) -> Response:
+    """Завершает сессию при опасном ответе и сохраняет результат."""
+    recommendation = {
+        'source': 'safety_check',
+        'recommendation': safety['recommended_action'],
+        'justification': safety['reason'],
+        'urgency': safety['urgency'],
+        'doctor': '',
+        'place': '',
+        'evidence': [],
+    }
+    routing = _save_routing(session, safety, recommendation)
+    session.status = Session.Status.COMPLETED
+    session.finished_at = timezone.now()
+    session.save(update_fields=['status', 'finished_at'])
+    return _session_response(
+        session,
+        Session.Status.COMPLETED,
+        safety,
+        recommendation=recommendation,
+        routing=routing,
+        message=safety['recommended_action'],
     )
 
 
@@ -279,27 +305,7 @@ class SendMessageView(APIView):
         )
 
         if safety['should_stop']:
-            recommendation = {
-                'source': 'safety_check',
-                'recommendation': safety['recommended_action'],
-                'justification': safety['reason'],
-                'urgency': safety['urgency'],
-                'doctor': '',
-                'place': '',
-                'evidence': [],
-            }
-            routing = _save_routing(session, safety, recommendation)
-            session.status = Session.Status.COMPLETED
-            session.finished_at = timezone.now()
-            session.save(update_fields=['status', 'finished_at'])
-            return _session_response(
-                session,
-                Session.Status.COMPLETED,
-                safety,
-                recommendation=recommendation,
-                routing=routing,
-                message=safety['recommended_action'],
-            )
+            return _stop_session(session, safety)
 
         # Генерируем шесть следующих вопросов один раз, затем просто пересылаем
         # сохранённые копии при каждом следующем ответе (без отдельного эндпоинта).
@@ -327,6 +333,45 @@ class SendMessageView(APIView):
             Session.Status.IN_PROGRESS,
             safety,
             next_question=next_question,
+        )
+
+
+# исправление ответа доступно, пока сессия не завершена
+@extend_schema(tags=['AI Sessions'])
+class UpdateSessionAnswerView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=UpdateAnswerRequestSerializer,
+        responses={200: SendMessageResponseSerializer},
+    )
+    def patch(self, request, session_id, question_id):
+        session = _get_session(request, session_id)
+        if session.status != Session.Status.IN_PROGRESS:
+            return Response({'error': 'Сессия завершена'}, status=status.HTTP_400_BAD_REQUEST)
+
+        question = get_object_or_404(SessionQuestion, id=question_id, session=session)
+
+        serializer = UpdateAnswerRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        question.answer_text = serializer.validated_data['answer_text']
+        question.answered_at = timezone.now()
+        question.save(update_fields=['answer_text', 'answered_at'])
+
+        safety = choose_worst_safety(
+            check_message_safety(question.answer_text),
+            get_session_safety(session, use_llm=False),
+        )
+        if safety['should_stop']:
+            return _stop_session(session, safety)
+
+        return _session_response(
+            session,
+            Session.Status.IN_PROGRESS,
+            safety,
+            next_question=_next_question(session),
         )
 
 

@@ -7,6 +7,7 @@ from .views import (
     SessionResultView,
     SessionViewSet,
     StartSessionView,
+    UpdateSessionAnswerView,
 )
 
 router = DefaultRouter()
@@ -18,6 +19,12 @@ urlpatterns = [
     # результат сессии по id
     path('sessions/<int:session_id>/result/', SessionResultView.as_view(), name='session-result'),
     path('sessions/<int:session_id>/message/', SendMessageView.as_view(), name='send-message'),
+    # исправление ответа в незавершённой сессии
+    path(
+        'sessions/<int:session_id>/questions/<int:question_id>/',
+        UpdateSessionAnswerView.as_view(),
+        name='session-answer-update',
+    ),
     path('sessions/<int:session_id>/complete/', CompleteSessionView.as_view(), name='complete-session'),
     path('', include(router.urls)),
 ]
