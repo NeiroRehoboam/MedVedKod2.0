@@ -31,12 +31,13 @@ def _check_triage(answers: list[dict]) -> TriageResult:
     return check_answers(_clean_answers(answers))
 
 
+
 def _check_safety_history(answers: list[dict]) -> None:
     """
-    Проверяет все сообщения пациента новым механизмом безопасности.
+    Проверяет историю ответов на экстренные признаки.
 
-    Повторная проверка всей истории нужна, поскольку публичный API
-    пока не хранит состояние предыдущих проверок.
+    Краткие утвердительные ответы на вопросы о прошлых
+    эпизодах не проверяются отдельно от контекста.
     """
 
     from rag_module.triage.message_safety_checker import (
@@ -54,19 +55,41 @@ def _check_safety_history(answers: list[dict]) -> None:
             and isinstance(item.get("answer"), str)
             and item["answer"].strip()
         )
-    ]
 
-    if not valid_messages:
-        raise ValueError(
-            "Не найдено корректных ответов пользователя."
+        is_generic_yes = normalized_answer in (
+            "да",
+            "да, иногда такое бывало",
+            "да, такое бывало",
+            "да, иногда бывало",
+            "да, подобное бывало",
+            "да, такое случалось",
         )
 
-    for message in valid_messages:
-        safety_result = check_message_safety(message)
+        if is_history_question and is_generic_yes and has_previous_answer:
+            has_previous_answer = True
+            continue
 
-        if safety_result.should_stop:
-            triage_result = convert_safety_result(safety_result)
-            raise TriageBlockedError(triage_result)
+        safety_result = check_message_safety(answer)
+
+        if safety_result.danger_status == "dangerous":
+            raise TriageBlockedError(
+                convert_safety_result(safety_result)
+            )
+
+        if (
+            safety_result.reason
+            == "Не удалось надёжно выполнить проверку сообщения."
+        ):
+            raise TriageBlockedError(
+                convert_safety_result(safety_result)
+            )
+
+        if safety_result.danger_status == "uncertain":
+            raise TriageBlockedError(
+                convert_safety_result(safety_result)
+            )
+
+        has_previous_answer = True
 
 
 def ask(question: str, limit: int = 5) -> dict:
@@ -120,13 +143,13 @@ def generate_next_question(answers: list[dict]) -> dict:
     return generate(answers)
 
 
+
 def generate_recommendation(
     answers: list[dict],
     search_results: list[dict],
 ) -> dict:
     """
-    Генерирует рекомендацию только после полноценной
-    клинической оценки.
+    Генерирует рекомендацию после проверки безопасности истории.
     """
 
     answers = _clean_answers(answers)
@@ -141,6 +164,7 @@ def generate_recommendation(
     )
 
     return generate(answers, search_results)
+
 
 def process_patient_answers(
     answers: list[dict],

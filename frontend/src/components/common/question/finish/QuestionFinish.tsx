@@ -200,7 +200,9 @@ export function QuestionFinish({
                         value="specialist"
                         className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
                       >
-                        <AccordionTrigger>Специалист</AccordionTrigger>
+                        <AccordionTrigger className="hover:no-underline">
+                          Специалист
+                        </AccordionTrigger>
 
                         <AccordionContent>
                           {result.specialistDescription}
@@ -213,7 +215,9 @@ export function QuestionFinish({
                         value="place"
                         className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
                       >
-                        <AccordionTrigger>Место обращения</AccordionTrigger>
+                        <AccordionTrigger className="hover:no-underline">
+                          Место обращения
+                        </AccordionTrigger>
 
                         <AccordionContent>{result.place}</AccordionContent>
                       </AccordionItem>
@@ -224,7 +228,7 @@ export function QuestionFinish({
                         value="reason"
                         className="bg-transparent! data-open:bg-transparent!"
                       >
-                        <AccordionTrigger>
+                        <AccordionTrigger className="hover:no-underline">
                           Обоснование рекомендации
                         </AccordionTrigger>
 

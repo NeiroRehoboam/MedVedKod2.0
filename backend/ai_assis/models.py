@@ -38,6 +38,7 @@ class SessionQuestion(models.Model):
     order_number = models.PositiveIntegerField()
     source = models.CharField(max_length=20, choices=Source.choices, default=Source.SYSTEM)
     allow_custom_answer = models.BooleanField(default=True)
+    options = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     answered_at = models.DateTimeField(null=True, blank=True)
 
