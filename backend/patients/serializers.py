@@ -4,7 +4,7 @@ from .models import Patient
 
 
 class PatientSerializer(serializers.ModelSerializer):
-    diagnosis = serializers.CharField(source='diagnosis_encrypted', write_only=True, required=False)
+    diagnosis = serializers.CharField(write_only=True, required=False)
     preferred_payment_detail = PaymentTypeSerializer(source='preferred_payment', read_only=True)
 
     class Meta:
