@@ -129,3 +129,11 @@ def decrypt_string(encrypted_b64: str, identity: str) -> str:
         return plaintext.decode('utf-8')
     except Exception as exc:
         raise DecryptionError('Не удалось расшифровать данные') from exc
+
+
+def encrypt_field(value, identity):
+    return encrypt_string(value, identity) if value is not None else None
+
+
+def decrypt_field(value, identity):
+    return decrypt_string(value, identity) if value is not None else None

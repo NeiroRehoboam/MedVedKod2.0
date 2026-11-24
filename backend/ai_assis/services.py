@@ -8,6 +8,7 @@
 
 import copy
 import logging
+from datetime import date
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,65 @@ FALLBACK_QUESTIONS = (
     "Какие лекарства вы принимали в последнее время?",
     "Были ли результаты обследований или анализов?",
 )
+
+
+def _age_years(birth_date, today=None):
+    if not birth_date:
+        return None
+    today = today or date.today()
+    return today.year - birth_date.year - (
+        (today.month, today.day) < (birth_date.month, birth_date.day)
+    )
+
+
+def _years_word(age):
+    if 10 <= age % 100 <= 20:
+        return 'лет'
+    if age % 10 == 1:
+        return 'год'
+    if 2 <= age % 10 <= 4:
+        return 'года'
+    return 'лет'
+
+
+def _birth_date_variants(birth_date):
+    short_year = str(birth_date.year)[2:]
+    return dict.fromkeys((
+        f'{birth_date.day:02d}.{birth_date.month:02d}.{birth_date.year}',
+        f'{birth_date.day}.{birth_date.month}.{birth_date.year}',
+        f'{birth_date.day:02d}/{birth_date.month:02d}/{birth_date.year}',
+        f'{birth_date.day}/{birth_date.month}/{birth_date.year}',
+        f'{birth_date.year}-{birth_date.month:02d}-{birth_date.day:02d}',
+        f'{birth_date.year}-{birth_date.month}-{birth_date.day}',
+        f'{birth_date.day:02d}.{birth_date.month:02d}.{short_year}',
+        f'{birth_date.day}.{birth_date.month}.{short_year}',
+    ))
+
+
+def patient_identifiers(patient):
+    values = {}
+    if patient is None:
+        return values
+
+    for name in (patient.first_name, patient.last_name):
+        if name and name.strip():
+            values[name.strip()] = '[ИМЯ]'
+
+    user = getattr(patient, 'user', None)
+    if user is not None:
+        for name in (user.first_name, user.last_name):
+            if name and name.strip():
+                values[name.strip()] = '[ИМЯ]'
+        max_id = getattr(user, 'max_id', None)
+        if max_id:
+            values[max_id] = '[ID]'
+
+    age = _age_years(patient.birth_date)
+    if age is not None and age >= 0:
+        replacement = f'пациенту {age} {_years_word(age)}'
+        for variant in _birth_date_variants(patient.birth_date):
+            values[variant] = replacement
+    return values
 
 
 def choose_worst_safety(*results: dict) -> dict:
@@ -144,7 +204,7 @@ def _map_rule_result(rule_result) -> dict:
     )
 
 
-def check_message_safety(message: str, use_llm: bool = True) -> dict:
+def check_message_safety(message: str, use_llm: bool = True, patient=None) -> dict:
     """Проверяет одно сообщение пациента на критические признаки.
 
     Фильтр правил детерминирован и не требует внешних сервисов. Он выполняется
@@ -162,7 +222,7 @@ def check_message_safety(message: str, use_llm: bool = True) -> dict:
         if mapped["should_stop"]:
             return mapped
     except Exception:
-        logger.exception("Rule-based safety check failed")
+        logger.warning("Rule-based safety check failed")
         return _fallback_safety("Не удалось выполнить проверку правил.")
 
     if not use_llm:
@@ -177,11 +237,12 @@ def check_message_safety(message: str, use_llm: bool = True) -> dict:
         return mapped
 
     try:
+        from rag_module.triage.deidentification import deidentify
         from rag_module.triage.message_safety_checker import (
             check_message_safety as rag_check,
         )
 
-        llm_result = rag_check(message)
+        llm_result = rag_check(deidentify(message, patient_identifiers(patient)))
         data = llm_result.model_dump()
         # uncertain от GigaChat больше не завершает сессию.
         return _safety(
@@ -193,14 +254,20 @@ def check_message_safety(message: str, use_llm: bool = True) -> dict:
             should_stop=data.get("should_stop", False),
         )
     except Exception:
-        logger.exception("LLM safety check failed, using rule-based result")
+        logger.warning("LLM safety check failed, using rule-based result")
         return mapped
 
 
 def build_answers(session) -> list[dict]:
     """Преобразует сохранённые вопросы в историю rag_module: question/answer."""
+    from rag_module.triage.deidentification import deidentify
+
+    values = patient_identifiers(getattr(session, "patient", None))
     return [
-        {"question": q.question_text, "answer": q.answer_text.strip()}
+        {
+            "question": deidentify(q.question_text or "", values),
+            "answer": deidentify(q.answer_text.strip(), values),
+        }
         for q in session.questions.order_by("order_number")
         if q.answer_text and q.answer_text.strip()
     ]
@@ -221,7 +288,9 @@ def get_session_safety(session, use_llm: bool = False) -> dict:
     worst = None
     signs: list[str] = []
     for item in answers:
-        result = check_message_safety(item["answer"], use_llm=use_llm)
+        result = check_message_safety(
+            item["answer"], use_llm=use_llm, patient=getattr(session, "patient", None)
+        )
         signs.extend(result["matched_signs"])
         if worst is None or (
             _DANGER_SEVERITY.get(result["danger_status"], 0)
@@ -253,6 +322,7 @@ def generate_next_questions(session, count: int | None = None) -> list[str]:
         from rag_module.generation.question_generator import (
             generate_next_question as rag_generate,
         )
+        from rag_module.triage.deidentification import deidentify
 
         if not GIGACHAT_CREDENTIALS:
             raise RuntimeError("GIGACHAT_CREDENTIALS is not configured")
@@ -262,7 +332,7 @@ def generate_next_questions(session, count: int | None = None) -> list[str]:
                 result = rag_generate(answers)
                 question = result.get("question") if isinstance(result, dict) else None
                 if isinstance(question, str) and question.strip():
-                    question = question.strip()
+                    question = deidentify(question.strip(), patient_identifiers(session.patient))
                     if question not in generated:
                         generated.append(question)
             except Exception:
@@ -342,7 +412,7 @@ def generate_recommendation(session, safety: dict) -> dict:
                 "evidence": result.get("evidence", []),
             }
     except Exception:
-        logger.exception("RAG recommendation unavailable, using safe fallback")
+        logger.warning("RAG recommendation unavailable, using safe fallback")
 
     return {
         "source": "fallback",

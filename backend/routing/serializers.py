@@ -5,6 +5,8 @@ from dictionaries.models import Specialty
 
 class RoutingResultSerializer(serializers.ModelSerializer):
     specialty_detail = SpecialtySerializer(source='specialty', read_only=True)
+    justification = serializers.CharField()
+    recommendations = serializers.CharField()
     session = serializers.PrimaryKeyRelatedField(read_only=True)
     specialty = serializers.PrimaryKeyRelatedField(queryset=Specialty.objects.all(), required=False, allow_null=True)
     class Meta:

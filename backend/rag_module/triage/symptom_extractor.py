@@ -335,16 +335,12 @@ unknown — частота не указана или недостаточно �
 
         payload = SymptomExtraction.model_validate(data)
 
-    except json.JSONDecodeError as error:
-        raise RuntimeError(
-            f"GigaChat вернул некорректный JSON: {error}. "
-            f"Ответ: {content[0].text!r}"
-        ) from error
+    except json.JSONDecodeError:
+        raise RuntimeError("GigaChat вернул некорректный JSON.") from None
 
-    except ValueError as error:
+    except ValueError:
         raise RuntimeError(
-            f"JSON не соответствует модели SymptomExtraction: {error}. "
-            f"Ответ: {content[0].text!r}"
-        ) from error
+            "JSON не соответствует модели SymptomExtraction."
+        ) from None
 
     return payload.model_dump()

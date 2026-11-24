@@ -1,18 +1,34 @@
 
 from rag_module.triage import check_answers, TriageResult
+from rag_module.triage.deidentification import deidentify
 from rag_module.triage.errors import TriageBlockedError
+
+
+def _clean_text(value):
+    return deidentify(value) if isinstance(value, str) else value
+
+
+def _clean_answers(answers: list[dict]) -> list[dict]:
+    if not isinstance(answers, list):
+        return answers
+    return [
+        {key: _clean_text(value) for key, value in item.items()}
+        if isinstance(item, dict)
+        else item
+        for item in answers
+    ]
 
 
 def search(question: str, limit: int = 5) -> list[dict]:
     """Ищет наиболее релевантные фрагменты документов."""
     from rag_module.retrieval.retriever import search_documents
 
-    return search_documents(question, limit)
+    return search_documents(_clean_text(question), limit)
 
 
 def _check_triage(answers: list[dict]) -> TriageResult:
     """Выполняет проверку старым механизмом Triage."""
-    return check_answers(answers)
+    return check_answers(_clean_answers(answers))
 
 
 
@@ -31,28 +47,13 @@ def _check_safety_history(answers: list[dict]) -> None:
         convert_safety_result,
     )
 
-    has_previous_answer = False
-
-    for item in answers:
-        if not isinstance(item, dict):
-            continue
-
-        answer = item.get("answer")
-        question = item.get("question", "")
-
-        if not isinstance(answer, str) or not answer.strip():
-            continue
-
-        answer = answer.strip()
-        question = question.strip().lower().replace("ё", "е")
-
-        # Не блокируем опрос из-за короткого ответа
-        # на вопрос о прошлых похожих симптомах.
-        normalized_answer = answer.lower().strip(" .,!?:;")
-
-        is_history_question = (
-            any(word in question for word in ("раньше", "ранее", "в прошлом"))
-            and any(word in question for word in ("подобн", "такие", "симптом", "боль"))
+    valid_messages = [
+        _clean_text(item["answer"]).strip()
+        for item in answers
+        if (
+            isinstance(item, dict)
+            and isinstance(item.get("answer"), str)
+            and item["answer"].strip()
         )
 
         is_generic_yes = normalized_answer in (
@@ -94,6 +95,8 @@ def _check_safety_history(answers: list[dict]) -> None:
 def ask(question: str, limit: int = 5) -> dict:
     """Ищет информацию в документах и формирует ответ."""
 
+    question = _clean_text(question)
+
     from rag_module.retrieval.retriever import search_documents
     from rag_module.generation.generator import generate_answer
 
@@ -122,6 +125,8 @@ def index_document(filename: str) -> dict:
 def generate_next_question(answers: list[dict]) -> dict:
     """Проверяет безопасность истории и генерирует следующий вопрос."""
 
+    answers = _clean_answers(answers)
+
     # Сохраняем старую проверку как дополнительный защитный слой.
     result = _check_triage(answers)
 
@@ -147,7 +152,12 @@ def generate_recommendation(
     Генерирует рекомендацию после проверки безопасности истории.
     """
 
-    _check_safety_history(answers)
+    answers = _clean_answers(answers)
+
+    result = _check_triage(answers)
+
+    if result.status != "no_red_flags_detected":
+        raise TriageBlockedError(result)
 
     from rag_module.generation.recommendation_generator import (
         generate_recommendation as generate,
@@ -170,7 +180,7 @@ def process_patient_answers(
         process_patient_answers as process,
     )
 
-    return process(answers, limit)
+    return process(_clean_answers(answers), limit)
 
 __all__ = [
     "search",
