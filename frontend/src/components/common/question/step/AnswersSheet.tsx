@@ -17,6 +17,7 @@ type AnswersSheetProps = {
   answers: Record<string, string>
   currentIndex: number
   onSelect: (index: number) => void
+  isCompleted?: boolean
 }
 
 function useIsMobile() {
@@ -52,6 +53,7 @@ export function AnswersSheet({
   answers,
   currentIndex,
   onSelect,
+  isCompleted = false,
 }: AnswersSheetProps) {
   const isMobile = useIsMobile()
 
@@ -94,8 +96,8 @@ export function AnswersSheet({
 
               const isCurrent = index === currentIndex
               const isPast = index < currentIndex
-              const isFuture = index > currentIndex
-              const canNavigate = isPast
+              const isFuture = !isCompleted && index > currentIndex
+              const canNavigate = isCompleted ? !isCurrent : isPast
 
               return (
                 <button
@@ -142,11 +144,13 @@ export function AnswersSheet({
                       variant="description"
                       className="line-clamp-2!"
                     >
-                      {isFuture
-                        ? "Появится после вашего ответа"
-                        : isCurrent
-                          ? "Текущий вопрос"
-                          : answer?.trim() || "Нет ответа"}
+                      {isCompleted
+                        ? answer?.trim() || "Нет ответа"
+                        : isFuture
+                          ? "Появится после вашего ответа"
+                          : isCurrent
+                            ? "Текущий вопрос"
+                            : answer?.trim() || "Нет ответа"}
                     </PageDescription>
                   </div>
 

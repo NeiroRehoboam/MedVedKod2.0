@@ -11,11 +11,7 @@ export function ReferencesPage() {
   return (
     <div>
       <section className="mb-8 space-y-5">
-        <PageTitle as="h1">
-          Что вас
-          <br />
-          беспокоит?
-        </PageTitle>
+        <PageTitle as="h1">Частые вопросы</PageTitle>
 
         <PageDescription>
           Собрали ответы на самые частые вопросы о МедВеде. Возможно, здесь уже
