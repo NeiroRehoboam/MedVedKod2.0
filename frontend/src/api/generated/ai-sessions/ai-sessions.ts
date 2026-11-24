@@ -26,6 +26,7 @@ import type {
 
 import type {
   AiSessionResponse,
+  PatchedUpdateAnswerRequestRequest,
   SendMessageRequestRequest,
   SendMessageResponse,
   SessionList,
@@ -547,6 +548,88 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getAiSessionsMessageCreateMutationOptions(options), queryClient);
+    }
+    export type aiSessionsQuestionsPartialUpdateResponse200 = {
+  data: SendMessageResponse
+  status: 200
+}
+
+export type aiSessionsQuestionsPartialUpdateResponseSuccess = (aiSessionsQuestionsPartialUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiSessionsQuestionsPartialUpdateResponse = (aiSessionsQuestionsPartialUpdateResponseSuccess)
+
+export const getAiSessionsQuestionsPartialUpdateUrl = (sessionId: number,
+    questionId: number,) => {
+
+
+
+
+  return `/api/ai/sessions/${sessionId}/questions/${questionId}/`
+}
+
+export const aiSessionsQuestionsPartialUpdate = async (sessionId: number,
+    questionId: number,
+    patchedUpdateAnswerRequestRequest?: PatchedUpdateAnswerRequestRequest, options?: Parameters<typeof customFetch>[1]): Promise<aiSessionsQuestionsPartialUpdateResponse> => {
+
+  return customFetch<aiSessionsQuestionsPartialUpdateResponse>(getAiSessionsQuestionsPartialUpdateUrl(sessionId,questionId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(patchedUpdateAnswerRequestRequest)
+  }
+);}
+
+
+
+
+
+export const getAiSessionsQuestionsPartialUpdateMutationKey = () => ['aiSessionsQuestionsPartialUpdate'] as const;
+
+export const getAiSessionsQuestionsPartialUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof aiSessionsQuestionsPartialUpdate>>, TError,AiSessionsQuestionsPartialUpdateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof aiSessionsQuestionsPartialUpdate>>, TError,AiSessionsQuestionsPartialUpdateMutationVariables, TContext> => {
+
+const mutationKey = getAiSessionsQuestionsPartialUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof aiSessionsQuestionsPartialUpdate>>, AiSessionsQuestionsPartialUpdateMutationVariables> = (props) => {
+          const {sessionId,questionId,data} = props ?? {};
+
+          return  aiSessionsQuestionsPartialUpdate(sessionId,questionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AiSessionsQuestionsPartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof aiSessionsQuestionsPartialUpdate>>>
+    export type AiSessionsQuestionsPartialUpdateMutationBody = PatchedUpdateAnswerRequestRequest | undefined
+    export type AiSessionsQuestionsPartialUpdateMutationError = unknown
+    export type AiSessionsQuestionsPartialUpdateMutationVariables = {sessionId: number;questionId: number;data?: PatchedUpdateAnswerRequestRequest}
+
+    export const useAiSessionsQuestionsPartialUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof aiSessionsQuestionsPartialUpdate>>, TError,AiSessionsQuestionsPartialUpdateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof aiSessionsQuestionsPartialUpdate>>,
+        TError,
+        AiSessionsQuestionsPartialUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAiSessionsQuestionsPartialUpdateMutationOptions(options), queryClient);
     }
     export type aiSessionsResultRetrieveResponse200 = {
   data: SessionResult
