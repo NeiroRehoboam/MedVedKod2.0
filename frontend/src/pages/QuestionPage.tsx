@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { Spinner } from "@maxhub/max-ui"
+import { Button, Spinner } from "@maxhub/max-ui"
 
 import {
   QuestionAnamnesis,
@@ -14,11 +14,13 @@ import {
 import { useQuestionFlow } from "@/hooks/useQuestionFlow"
 import {
   useAiSession,
+  useAiSessionResult,
   useStartAiSession,
   useInitialQuestion,
 } from "@/hooks/useAiSessions"
 
 import type { AiSessionResponse } from "@/api/generated/models"
+import { ArrowUpRight } from "lucide-react"
 
 export function QuestionPage() {
   const navigate = useNavigate()
@@ -27,6 +29,7 @@ export function QuestionPage() {
   const startSession = useStartAiSession()
   const sessionQuery = useAiSession(sessionId)
   const isCompleted = sessionQuery.data?.session.status === "COMPLETED"
+  const resultQuery = useAiSessionResult(sessionId, isCompleted)
   const flow = useQuestionFlow(sessionId, isCompleted)
 
   const initialQuestionQuery = useInitialQuestion(
@@ -34,7 +37,11 @@ export function QuestionPage() {
     flow.step === "questions" && sessionQuery.isSuccess && !flow.isCompleted
   )
 
-  const initialQuestionData = isCompleted ? sessionQuery.data : initialQuestionQuery.data?.data
+  const initialQuestionData = sessionQuery.isSuccess
+    ? isCompleted
+      ? resultQuery.data?.data
+      : initialQuestionQuery.data?.data
+    : undefined
 
   const { applyResponse, setStep } = flow
   const initializedSession = useRef<string | undefined>(undefined)
@@ -47,7 +54,7 @@ export function QuestionPage() {
     ) {
       initializedSession.current = sessionId
       applyResponse(initialQuestionData)
-      if (isCompleted) setStep("questions")
+      if (isCompleted) setStep("finished")
     }
   }, [initialQuestionData, sessionId, applyResponse, isCompleted, setStep])
 
@@ -101,8 +108,10 @@ export function QuestionPage() {
       creatingSession.current = false
     }
   }
+  const step = isCompleted && flow.step !== "questions" ? "finished" : flow.step
+
   const renderStep = () => {
-    switch (flow.step) {
+    switch (step) {
       case "welcome":
         return (
           <QuestionWelcome
@@ -146,8 +155,23 @@ export function QuestionPage() {
             </div>
           )
         }
+        return (
+          <>
+            <QuestionStep flow={flow} />
 
-        return <QuestionStep flow={flow} />
+            {isCompleted && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="max-button-between mt-5 w-full shrink-0"
+                onClick={() => flow.setStep("finished")}
+                iconAfter={<ArrowUpRight size={20} />}
+              >
+                К результату
+              </Button>
+            )}
+          </>
+        )
 
       case "payment":
         return (
@@ -164,11 +188,45 @@ export function QuestionPage() {
         )
 
       case "finished":
+        if (isCompleted && resultQuery.isPending) {
+          return (
+            <div
+              className="flex flex-1 items-center justify-center"
+              role="status"
+              aria-label="Загрузка результата"
+            >
+              <Spinner className="size-8" />
+            </div>
+          )
+        }
+
+        if (isCompleted && resultQuery.isError) {
+          return (
+            <div role="alert" className="py-8 text-center">
+              <p className="text-max-text-primary">
+                Не удалось загрузить результат
+              </p>
+              <button
+                type="button"
+                onClick={() => void resultQuery.refetch()}
+                className="mt-4 text-max-text-secondary underline"
+              >
+                Попробовать снова
+              </button>
+            </div>
+          )
+        }
+
         return (
           <QuestionFinish
-            result={flow.response}
+            result={isCompleted ? resultQuery.data?.data : flow.response}
             payment={flow.payment ?? undefined}
             onRestart={handleRestart}
+            onViewAnswers={
+              isCompleted && flow.questions.length > 0
+                ? () => flow.setStep("questions")
+                : undefined
+            }
           />
         )
     }
@@ -200,7 +258,7 @@ export function QuestionPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col px-5 pt-6 pb-[max(24px,env(safe-area-inset-bottom))] sm:px-8 sm:pt-8">
-      {flow.step !== "welcome" && flow.step !== "finished" && (
+      {step !== "welcome" && step !== "finished" && (
         <QuestionHeader
           onExit={handleExit}
           questionIndex={flow.step === "questions" ? flow.index : undefined}

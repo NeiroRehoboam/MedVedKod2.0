@@ -1,5 +1,5 @@
-import type { AiSessionResponse } from "@/api/generated/models"
-import { AlertCircle, AlertTriangle, ClipboardList } from "lucide-react"
+import type { AiSessionResponse, SessionResult } from "@/api/generated/models"
+import { AlertCircle, AlertTriangle } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import {
@@ -15,9 +15,10 @@ import { DoctorSignature, PageDescription, PageTitle } from "../../typography"
 type Urgency = "emergency" | "urgent" | "planned" | "self_care" | "undetermined"
 
 type QuestionFinishProps = {
-  result?: AiSessionResponse
+  result?: AiSessionResponse | SessionResult
   payment?: PaymentType
   onRestart: () => void
+  onViewAnswers?: () => void
 }
 
 const urgencyConfig = {
@@ -64,6 +65,7 @@ const urgencyConfig = {
 export function QuestionFinish({
   result: response,
   onRestart,
+  onViewAnswers,
 }: QuestionFinishProps) {
   const recommendation = response?.recommendation
   const isFallback = recommendation?.source === "fallback"
@@ -139,17 +141,15 @@ export function QuestionFinish({
       <div className="space-y-3">
         {showFallback ? (
           <section className="flex flex-col items-center px-4 py-8 text-center">
-            <div className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-500">
-              <ClipboardList size={30} strokeWidth={1.5} />
-            </div>
-
-            <h3 className="max-w-xs text-xl leading-tight font-semibold tracking-tight text-max-text-primary">
+            <PageTitle as="h4">
               Не удалось определить маршрут обращения
-            </h3>
+            </PageTitle>
 
-            <p className="mt-3 max-w-sm text-sm leading-relaxed text-max-text-secondary">
-              Для оценки вашего состояния рекомендуем обратиться к врачу.
-            </p>
+            <div className="mt-3">
+              <PageDescription>
+                Для оценки вашего состояния рекомендуем обратиться к врачу.
+              </PageDescription>
+            </div>
           </section>
         ) : (
           <>
@@ -274,6 +274,17 @@ export function QuestionFinish({
         >
           Новое обращение
         </Button>
+        {onViewAnswers && (
+          <Button
+            type="button"
+            size="large"
+            variant="secondary"
+            stretched
+            onClick={onViewAnswers}
+          >
+            Мои ответы
+          </Button>
+        )}
       </div>
     </section>
   )

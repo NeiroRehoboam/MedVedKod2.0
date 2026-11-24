@@ -12,7 +12,7 @@ import type { SessionDetail } from './sessionDetail';
 import type { SessionQuestion } from './sessionQuestion';
 
 /**
- * Single response shape for every AI-session endpoint.
+ * Единая форма ответа для всех эндпоинтов AI-сессий.
  */
 export interface SendMessageResponse {
   status: string;

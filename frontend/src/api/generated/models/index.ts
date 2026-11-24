@@ -52,6 +52,8 @@ export * from './sendMessageResponseRecommendation';
 export * from './sessionDetail';
 export * from './sessionList';
 export * from './sessionQuestion';
+export * from './sessionResult';
+export * from './sessionResultRecommendation';
 export * from './smokingStatusEnum';
 export * from './sourceEnum';
 export * from './specialty';
