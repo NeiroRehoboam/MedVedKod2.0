@@ -300,7 +300,7 @@ class SendMessageView(APIView):
         # Вся история проверяется заново, чтобы признак, пропущенный ранее,
         # всё равно остановил опрос.
         safety = choose_worst_safety(
-            check_message_safety(user_text),
+            check_message_safety(user_text, patient=session.patient),
             get_session_safety(session, use_llm=False),
         )
 
@@ -361,7 +361,7 @@ class UpdateSessionAnswerView(APIView):
         question.save(update_fields=['answer_text', 'answered_at'])
 
         safety = choose_worst_safety(
-            check_message_safety(question.answer_text),
+            check_message_safety(question.answer_text, patient=session.patient),
             get_session_safety(session, use_llm=False),
         )
         if safety['should_stop']:

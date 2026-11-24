@@ -1,18 +1,34 @@
 
 from rag_module.triage import check_answers, TriageResult
+from rag_module.triage.deidentification import deidentify
 from rag_module.triage.errors import TriageBlockedError
+
+
+def _clean_text(value):
+    return deidentify(value) if isinstance(value, str) else value
+
+
+def _clean_answers(answers: list[dict]) -> list[dict]:
+    if not isinstance(answers, list):
+        return answers
+    return [
+        {key: _clean_text(value) for key, value in item.items()}
+        if isinstance(item, dict)
+        else item
+        for item in answers
+    ]
 
 
 def search(question: str, limit: int = 5) -> list[dict]:
     """Ищет наиболее релевантные фрагменты документов."""
     from rag_module.retrieval.retriever import search_documents
 
-    return search_documents(question, limit)
+    return search_documents(_clean_text(question), limit)
 
 
 def _check_triage(answers: list[dict]) -> TriageResult:
     """Выполняет проверку старым механизмом Triage."""
-    return check_answers(answers)
+    return check_answers(_clean_answers(answers))
 
 
 def _check_safety_history(answers: list[dict]) -> None:
@@ -31,7 +47,7 @@ def _check_safety_history(answers: list[dict]) -> None:
     )
 
     valid_messages = [
-        item["answer"].strip()
+        _clean_text(item["answer"]).strip()
         for item in answers
         if (
             isinstance(item, dict)
@@ -55,6 +71,8 @@ def _check_safety_history(answers: list[dict]) -> None:
 
 def ask(question: str, limit: int = 5) -> dict:
     """Ищет информацию в документах и формирует ответ."""
+
+    question = _clean_text(question)
 
     from rag_module.retrieval.retriever import search_documents
     from rag_module.generation.generator import generate_answer
@@ -84,6 +102,8 @@ def index_document(filename: str) -> dict:
 def generate_next_question(answers: list[dict]) -> dict:
     """Проверяет безопасность истории и генерирует следующий вопрос."""
 
+    answers = _clean_answers(answers)
+
     # Сохраняем старую проверку как дополнительный защитный слой.
     result = _check_triage(answers)
 
@@ -108,6 +128,8 @@ def generate_recommendation(
     Генерирует рекомендацию только после полноценной
     клинической оценки.
     """
+
+    answers = _clean_answers(answers)
 
     result = _check_triage(answers)
 
@@ -134,7 +156,7 @@ def process_patient_answers(
         process_patient_answers as process,
     )
 
-    return process(answers, limit)
+    return process(_clean_answers(answers), limit)
 
 __all__ = [
     "search",

@@ -1,5 +1,6 @@
+from datetime import date
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
@@ -7,7 +8,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from ai_assis import services as ai_services
-from ai_assis.models import BaseQuestion, Session
+from ai_assis.models import BaseQuestion, Session, SessionQuestion
 from patients.models import Patient
 from routing.models import RoutingResult
 
@@ -339,3 +340,93 @@ class AiSessionApiTests(TestCase):
 
     def test_anonymous_is_forbidden(self):
         self.assertEqual(APIClient().post(reverse("start-session")).status_code, 403)
+
+
+class DeidentificationIntegrationTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            max_id="id-987654",
+            password=None,
+            first_name="Анна",
+            last_name="Иванова",
+        )
+        self.patient = Patient.objects.create(
+            user=self.user,
+            first_name="Анна",
+            last_name="Иванова",
+            birth_date=date(1990, 5, 12),
+        )
+        self.session = Session.objects.create(patient=self.patient)
+        self.question = SessionQuestion.objects.create(
+            session=self.session,
+            question_text="Что вас беспокоит?",
+            answer_text=(
+                "Я Анна Иванова, id-987654, род. 12.05.1990, "
+                "тел. +7 999 123-45-67, почта anna@example.com, "
+                "температура 38.5, давление 120/80"
+            ),
+            order_number=1,
+        )
+
+    def test_build_answers_replaces_identifiers_with_age(self):
+        answer = ai_services.build_answers(self.session)[0]["answer"]
+        age = ai_services._age_years(date(1990, 5, 12))
+
+        self.assertNotIn("Анна", answer)
+        self.assertNotIn("Иванова", answer)
+        self.assertNotIn("id-987654", answer)
+        self.assertNotIn("12.05.1990", answer)
+        self.assertNotIn("anna@example.com", answer)
+        self.assertIn(f"пациенту {age} {ai_services._years_word(age)}", answer)
+        self.assertIn("38.5", answer)
+        self.assertIn("120/80", answer)
+        self.assertTrue(
+            SessionQuestion.objects.get(id=self.question.id).answer_text.startswith("Я Анна")
+        )
+
+    @patch("rag_module.config.GIGACHAT_CREDENTIALS", "test-credential")
+    def test_safety_check_receives_deidentified_message(self):
+        mock_rag_check = MagicMock(
+            return_value=SimpleNamespace(
+                model_dump=lambda: {
+                    "danger_status": "no_critical_signs_detected",
+                    "urgency": "undetermined",
+                    "reason": "Без критических признаков.",
+                    "recommended_action": "Продолжайте опрос.",
+                }
+            )
+        )
+        fake_module = SimpleNamespace(check_message_safety=mock_rag_check)
+
+        with patch.dict(
+            "sys.modules",
+            {"rag_module.triage.message_safety_checker": fake_module},
+        ):
+            result = ai_services.check_message_safety(
+                "Анна Иванова, 12.05.1990, +7 999 123-45-67, болит голова",
+                patient=self.patient,
+            )
+        sent_message = mock_rag_check.call_args.args[0]
+
+        self.assertNotIn("Анна", sent_message)
+        self.assertNotIn("Иванова", sent_message)
+        self.assertNotIn("12.05.1990", sent_message)
+        self.assertNotIn("+7 999", sent_message)
+        self.assertIn("болит голова", sent_message)
+        self.assertFalse(result["is_dangerous"])
+
+    @patch("rag_module.config.GIGACHAT_CREDENTIALS", "test-credential")
+    def test_generated_question_is_deidentified(self):
+        mock_generate = MagicMock(
+            return_value={"question": "Анна, у вас больно в 12.05.1990?"}
+        )
+        fake_module = SimpleNamespace(generate_next_question=mock_generate)
+
+        with patch.dict(
+            "sys.modules",
+            {"rag_module.generation.question_generator": fake_module},
+        ):
+            questions = ai_services.generate_next_questions(self.session, count=1)
+
+        self.assertNotIn("Анна", questions[0])
+        self.assertNotIn("12.05.1990", questions[0])
