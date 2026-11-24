@@ -1,5 +1,5 @@
 import type { AiSessionResponse, SessionResult } from "@/api/generated/models"
-import { AlertCircle, AlertTriangle, ClipboardList } from "lucide-react"
+import { AlertCircle, AlertTriangle } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import {
