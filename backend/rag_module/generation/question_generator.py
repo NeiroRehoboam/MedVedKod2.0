@@ -1,5 +1,6 @@
-
 import json
+import re
+from difflib import SequenceMatcher
 from pathlib import Path
 
 from gigachat import GigaChat
@@ -25,29 +26,100 @@ from rag_module.generation.question_models import (
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CERT_PATH = PROJECT_ROOT / "certs" / "russian_trusted_root_ca_pem.crt"
 
+MAX_GENERATION_ATTEMPTS = 3
 
-def generate_next_question(
-    answers: list[dict],
-) -> dict:
+# Служебные слова не должны влиять на сравнение вопросов.
+STOP_WORDS = {
+    "а", "без", "бы", "был", "была", "были", "быть",
+    "в", "вам", "вас", "вы", "где", "да", "для", "до",
+    "его", "ее", "если", "есть", "ещё", "же", "за",
+    "и", "из", "или", "именно", "как", "какая", "какие",
+    "какой", "когда", "кто", "ли", "мне", "может",
+    "на", "над", "не", "него", "нее", "нет", "ни",
+    "но", "о", "об", "он", "она", "они", "оно",
+    "от", "по", "под", "при", "про", "с", "со",
+    "так", "также", "то", "только", "у", "уже",
+    "что", "это", "этот", "эта", "эти", "я",
+}
+
+
+def _normalize_question(question: str) -> str:
+    """Приводит вопрос к виду, удобному для сравнения."""
+
+    question = question.lower().replace("ё", "е")
+    question = re.sub(r"[^а-яa-z0-9\s]", " ", question)
+    question = re.sub(r"\s+", " ", question).strip()
+
+    return question
+
+
+def _question_tokens(question: str) -> set[str]:
+    """Возвращает значимые слова вопроса."""
+
+    normalized = _normalize_question(question)
+
+    return {
+        word
+        for word in normalized.split()
+        if len(word) > 2 and word not in STOP_WORDS
+    }
+
+
+def _is_duplicate_question(
+    new_question: str,
+    previous_questions: list[str],
+) -> bool:
     """
-    Генерирует следующий вопрос опроса на основе
-    предыдущих ответов пользователя.
+    Проверяет, не повторяет ли новый вопрос предыдущие.
 
-    Не использует RAG и Qdrant.
-    Возвращает словарь с полем question.
+    Используются текстовое сходство и пересечение значимых слов.
+    Это дополнительная защита, а не полноценное семантическое
+    сравнение смысла.
     """
 
-    if not GIGACHAT_CREDENTIALS:
-        raise RuntimeError(
-            "Не указан GIGACHAT_CREDENTIALS в файле .env"
+    new_normalized = _normalize_question(new_question)
+    new_tokens = _question_tokens(new_question)
+
+    for previous_question in previous_questions:
+        previous_normalized = _normalize_question(
+            previous_question
         )
 
-    if not isinstance(answers, list) or not answers:
-        raise ValueError(
-            "Необходимо передать хотя бы один предыдущий ответ."
-        )
+        if not previous_normalized:
+            continue
+
+        # Практически одинаковые формулировки.
+        similarity = SequenceMatcher(
+            None,
+            new_normalized,
+            previous_normalized,
+        ).ratio()
+
+        if similarity >= 0.78:
+            return True
+
+        previous_tokens = _question_tokens(previous_question)
+
+        if not new_tokens or not previous_tokens:
+            continue
+
+        # Сравниваем пересечение значимых слов.
+        intersection = new_tokens & previous_tokens
+        union = new_tokens | previous_tokens
+
+        jaccard_similarity = len(intersection) / len(union)
+
+        if jaccard_similarity >= 0.72:
+            return True
+
+    return False
+
+
+def _extract_answers(answers: list[dict]) -> tuple[str, list[str]]:
+    """Проверяет и форматирует историю вопросов и ответов."""
 
     answers_text = []
+    previous_questions = []
 
     for index, item in enumerate(answers, start=1):
         if not isinstance(item, dict):
@@ -62,9 +134,14 @@ def generate_next_question(
         if not isinstance(answer, str) or not answer.strip():
             continue
 
+        question = question.strip()
+        answer = answer.strip()
+
+        previous_questions.append(question)
+
         answers_text.append(
-            f"Вопрос {index}: {question.strip()}\n"
-            f"Ответ пользователя: {answer.strip()}"
+            f"Вопрос {index}: {question}\n"
+            f"Ответ пользователя: {answer}"
         )
 
     if not answers_text:
@@ -72,105 +149,263 @@ def generate_next_question(
             "Не найдено корректных вопросов и ответов."
         )
 
-    context = "\n\n".join(answers_text)
+    return "\n\n".join(answers_text), previous_questions
 
-    prompt = f"""
+
+def _build_prompt(
+    context: str,
+    previous_questions: list[str],
+    rejected_question: str | None = None,
+) -> str:
+    """Формирует инструкции для генерации следующего вопроса."""
+
+    previous_questions_text = "\n".join(
+        f"- {question}" for question in previous_questions
+    )
+
+    retry_instruction = ""
+
+    if rejected_question:
+        retry_instruction = f"""
+ПРЕДЫДУЩИЙ ВАРИАНТ ОТКЛОНЁН:
+
+{rejected_question}
+
+Он повторяет ранее заданный вопрос.
+Не перефразируй его. Выбери ДРУГОЙ аспект основной жалобы.
+"""
+
+    return f"""
 Ты — помощник, который проводит предварительный опрос
 пользователя о его самочувствии.
 
-Твоя задача — задать ОДИН следующий уточняющий вопрос,
-который логически продолжает текущую жалобу пользователя.
+Твоя задача — задать ОДИН новый уточняющий вопрос
+и предложить варианты ответа, если они уместны.
 
-ГЛАВНОЕ ПРАВИЛО:
-Не меняй тему основной жалобы пользователя.
-Все новые вопросы должны относиться к той проблеме,
-с которой пользователь изначально обратился.
+ОСНОВНАЯ ЗАДАЧА:
 
-ПРАВИЛА:
+Помоги последовательно собрать недостающую информацию
+о первоначальной жалобе пользователя.
 
-1. Сначала определи основную жалобу по первому ответу пользователя.
-2. Учитывай все предыдущие вопросы и ответы.
-3. Задавай вопрос, который уточняет именно основную жалобу.
-4. Не переключайся на другие симптомы, если пользователь
-   сам о них не сообщил и они не связаны с текущей жалобой.
-5. Не задавай повторно вопросы, на которые уже получен ответ.
-6. Считай информацию уже известной, если пользователь
-   прямо или однозначно сообщил её в предыдущих ответах.
-7. Если пользователь уже назвал область боли
-   (например, поясница, колено, голова), не спрашивай,
-   где именно находится боль.
-8. Не перефразируй ранее заданный вопрос, чтобы получить
-   уже известную информацию.
-9. Перед выбором вопроса проверь, какие сведения уже известны:
-   локализация, продолжительность, интенсивность,
-   характер боли и сопутствующие симптомы.
-10. Не ставь диагнозы.
-11. Не назначай лечение и лекарства.
-12. Не делай медицинских выводов.
-13. Не добавляй приветствия и пояснения.
-14. Верни только JSON в соответствии с заданной схемой.
+ПРАВИЛА УТОЧНЕНИЯ НЕОДНОЗНАЧНЫХ ОТВЕТОВ:
 
-ПРОВЕРКА ПЕРЕД ОТВЕТОМ:
+1. Если предыдущий ответ допускает несколько трактовок,
+   сначала уточни именно неоднозначную информацию.
+2. Если пользователь описывает периодическую боль,
+   не считай это автоматически экстренным признаком.
+3. Различай наличие симптома сейчас и его наличие в прошлом.
+4. Не спрашивай обо всех опасных симптомах повторно,
+   если они уже были проверены и пользователь их отрицал.
+5. Если текущий характер симптома неясен,
+   задай один конкретный вопрос для уточнения.
+6. Не делай вывод об отсутствии опасности только
+   на основании того, что пользователь не упомянул симптом.
 
-- Относится ли вопрос к первоначальной жалобе?
-- Не задавался ли этот вопрос ранее?
-- Поможет ли ответ уточнить текущую проблему?
+ОБЯЗАТЕЛЬНЫЕ ПРАВИЛА:
 
-Если вопрос не соответствует хотя бы одному условию,
-выбери другой.
+1. Определи основную жалобу по истории ответов.
+2. Учитывай ВСЕ предыдущие вопросы и ответы.
+3. Не меняй тему первоначальной жалобы.
+4. Не спрашивай повторно то, что пользователь уже сообщил.
+5. Не задавай вопрос, который отличается от предыдущего
+   только формулировкой.
+6. Не спрашивай о локализации, если она уже известна.
+7. Не спрашивай о продолжительности, если она уже известна.
+8. Не спрашивай об интенсивности, если она уже известна.
+9. Не спрашивай о характере симптома, если он уже известен.
+10. Не повторяй уже выясненные сопутствующие симптомы.
+11. Если пользователь сообщил несколько симптомов,
+    учитывай их связь с первоначальной жалобой.
+12. Выбирай сведения, которые ещё НЕ выяснены.
+13. Каждый новый вопрос должен раскрывать новый аспект
+    проблемы пользователя.
+14. Не задавай несколько вопросов в одном сообщении.
+15. Не ставь диагнозы.
+16. Не назначай лечение и лекарства.
+17. Не добавляй приветствия и пояснения.
 
-ПРЕДЫДУЩИЕ ВОПРОСЫ И ОТВЕТЫ:
+ВОЗМОЖНЫЕ АСПЕКТЫ ДЛЯ УТОЧНЕНИЯ:
+
+- когда началась проблема;
+- как менялось состояние со временем;
+- интенсивность симптома;
+- характер и особенности симптома;
+- обстоятельства появления или усиления;
+- сопутствующие симптомы;
+- что облегчает или усиливает состояние;
+- влияние на повседневную активность;
+- наличие хронических заболеваний и принимаемых лекарств.
+
+Это не фиксированный список вопросов.
+Не используй его как шаблон. Выбирай только то,
+что действительно ещё неизвестно и относится к жалобе.
+
+ПРАВИЛА ДЛЯ ВАРИАНТОВ ОТВЕТА:
+
+1. Верни от 3 до 5 вариантов, если они действительно помогают.
+2. Варианты должны подходить именно к сформулированному вопросу.
+3. Не предлагай варианты, которые заранее предполагают диагноз.
+4. Не используй варианты, которые искажают смысл вопроса.
+5. Если вопрос предполагает свободный подробный ответ,
+   верни пустой массив options.
+6. Не помещай сам вопрос в варианты ответа.
+
+ПРЕДЫДУЩИЕ ВОПРОСЫ:
+
+{previous_questions_text}
+
+ПРЕДЫДУЩИЕ ОТВЕТЫ:
 
 {context}
+
+{retry_instruction}
+
+ПРОВЕРЬ ПЕРЕД ОТВЕТОМ:
+
+- Вопрос относится к первоначальной жалобе?
+- Информация ещё не известна?
+- Вопрос не повторяет предыдущие даже другими словами?
+- Он уточняет новый аспект проблемы?
+- Варианты ответа подходят к этому вопросу?
+
+Верни только JSON строго по заданной схеме:
+
+{{
+    "question": "Один новый уточняющий вопрос",
+    "options": [
+        "Вариант ответа 1",
+        "Вариант ответа 2",
+        "Вариант ответа 3"
+    ]
+}}
 """
 
-    request = ChatCompletionRequest(
-        model=GIGACHAT_MODEL,
-        messages=[
-            ChatMessage(
-                role="user",
-                content=[
-                    ChatContentPart(text=prompt)
-                ]
-            )
-        ],
-        model_options=ChatModelOptions(
-            response_format=ChatResponseFormat(
-                type="json_schema",
-                schema_=NEXT_QUESTION_JSON_SCHEMA,
-                strict=True,
-            )
+
+def generate_next_question(
+    answers: list[dict],
+) -> dict:
+    """
+    Генерирует один следующий вопрос на основе истории ответов.
+
+    Не использует RAG и Qdrant.
+
+    Возвращает:
+    {
+        "question": "...",
+        "options": ["...", "..."]
+    }
+
+    Публичная сигнатура функции сохранена.
+    """
+
+    if not GIGACHAT_CREDENTIALS:
+        raise RuntimeError(
+            "Не указан GIGACHAT_CREDENTIALS в файле .env"
         )
-    )
+
+    if not isinstance(answers, list) or not answers:
+        raise ValueError(
+            "Необходимо передать хотя бы один предыдущий ответ."
+        )
+
+    context, previous_questions = _extract_answers(answers)
+
+    rejected_question = None
 
     with GigaChat(
         credentials=GIGACHAT_CREDENTIALS,
         scope=GIGACHAT_SCOPE,
         model=GIGACHAT_MODEL,
-        ca_bundle_file=str(CERT_PATH)
+        ca_bundle_file=str(CERT_PATH),
     ) as client:
 
-        response = client.chat.create(request)
+        for attempt in range(MAX_GENERATION_ATTEMPTS):
+            prompt = _build_prompt(
+                context=context,
+                previous_questions=previous_questions,
+                rejected_question=rejected_question,
+            )
 
-    if not response.messages:
-        raise RuntimeError(
-            "GigaChat не вернул сообщение."
-        )
+            request = ChatCompletionRequest(
+                model=GIGACHAT_MODEL,
+                messages=[
+                    ChatMessage(
+                        role="user",
+                        content=[
+                            ChatContentPart(text=prompt)
+                        ],
+                    )
+                ],
+                model_options=ChatModelOptions(
+                    response_format=ChatResponseFormat(
+                        type="json_schema",
+                        schema_=NEXT_QUESTION_JSON_SCHEMA,
+                        strict=True,
+                    )
+                ),
+            )
 
-    content = response.messages[0].content
+            response = client.chat.create(request)
 
-    if not content or not content[0].text:
-        raise RuntimeError(
-            "GigaChat вернул пустой ответ."
-        )
+            if not response.messages:
+                raise RuntimeError(
+                    "GigaChat не вернул сообщение."
+                )
 
-    try:
-        data = json.loads(content[0].text.strip())
-        payload = NextQuestion.model_validate(data)
+            content = response.messages[0].content
 
-    except (json.JSONDecodeError, ValueError) as error:
-        raise RuntimeError(
-            "Не удалось проверить JSON сгенерированного вопроса."
-        ) from error
+            if not content or not content[0].text:
+                raise RuntimeError(
+                    "GigaChat вернул пустой ответ."
+                )
 
-    return payload.model_dump()
+            try:
+                data = json.loads(content[0].text.strip())
+                payload = NextQuestion.model_validate(data)
+
+            except (json.JSONDecodeError, ValueError) as error:
+                raise RuntimeError(
+                    "Не удалось проверить JSON сгенерированного вопроса."
+                ) from error
+
+            question = payload.question.strip()
+
+            if not question:
+                raise RuntimeError(
+                    "GigaChat вернул пустой вопрос."
+                )
+
+            if _is_duplicate_question(
+                question,
+                previous_questions,
+            ):
+                rejected_question = question
+                continue
+
+            # Убираем пустые и повторяющиеся варианты ответа.
+            unique_options = []
+            seen_options = set()
+
+            for option in payload.options:
+                option = option.strip()
+
+                if not option:
+                    continue
+
+                normalized_option = _normalize_question(option)
+
+                if normalized_option in seen_options:
+                    continue
+
+                seen_options.add(normalized_option)
+                unique_options.append(option)
+
+            return {
+                "question": question,
+                "options": unique_options[:5],
+            }
+
+    raise RuntimeError(
+        "Не удалось сгенерировать новый вопрос без повторов "
+        f"за {MAX_GENERATION_ATTEMPTS} попытки."
+    )

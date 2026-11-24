@@ -15,12 +15,13 @@ def _check_triage(answers: list[dict]) -> TriageResult:
     return check_answers(answers)
 
 
+
 def _check_safety_history(answers: list[dict]) -> None:
     """
-    Проверяет все сообщения пациента новым механизмом безопасности.
+    Проверяет историю ответов на экстренные признаки.
 
-    Повторная проверка всей истории нужна, поскольку публичный API
-    пока не хранит состояние предыдущих проверок.
+    Краткие утвердительные ответы на вопросы о прошлых
+    эпизодах не проверяются отдельно от контекста.
     """
 
     from rag_module.triage.message_safety_checker import (
@@ -30,27 +31,64 @@ def _check_safety_history(answers: list[dict]) -> None:
         convert_safety_result,
     )
 
-    valid_messages = [
-        item["answer"].strip()
-        for item in answers
+    has_previous_answer = False
+
+    for item in answers:
+        if not isinstance(item, dict):
+            continue
+
+        answer = item.get("answer")
+        question = item.get("question", "")
+
+        if not isinstance(answer, str) or not answer.strip():
+            continue
+
+        answer = answer.strip()
+        question = question.strip().lower().replace("ё", "е")
+
+        # Не блокируем опрос из-за короткого ответа
+        # на вопрос о прошлых похожих симптомах.
+        normalized_answer = answer.lower().strip(" .,!?:;")
+
+        is_history_question = (
+            any(word in question for word in ("раньше", "ранее", "в прошлом"))
+            and any(word in question for word in ("подобн", "такие", "симптом", "боль"))
+        )
+
+        is_generic_yes = normalized_answer in (
+            "да",
+            "да, иногда такое бывало",
+            "да, такое бывало",
+            "да, иногда бывало",
+            "да, подобное бывало",
+            "да, такое случалось",
+        )
+
+        if is_history_question and is_generic_yes and has_previous_answer:
+            has_previous_answer = True
+            continue
+
+        safety_result = check_message_safety(answer)
+
+        if safety_result.danger_status == "dangerous":
+            raise TriageBlockedError(
+                convert_safety_result(safety_result)
+            )
+
         if (
-            isinstance(item, dict)
-            and isinstance(item.get("answer"), str)
-            and item["answer"].strip()
-        )
-    ]
+            safety_result.reason
+            == "Не удалось надёжно выполнить проверку сообщения."
+        ):
+            raise TriageBlockedError(
+                convert_safety_result(safety_result)
+            )
 
-    if not valid_messages:
-        raise ValueError(
-            "Не найдено корректных ответов пользователя."
-        )
+        if safety_result.danger_status == "uncertain":
+            raise TriageBlockedError(
+                convert_safety_result(safety_result)
+            )
 
-    for message in valid_messages:
-        safety_result = check_message_safety(message)
-
-        if safety_result.should_stop:
-            triage_result = convert_safety_result(safety_result)
-            raise TriageBlockedError(triage_result)
+        has_previous_answer = True
 
 
 def ask(question: str, limit: int = 5) -> dict:
@@ -100,25 +138,23 @@ def generate_next_question(answers: list[dict]) -> dict:
     return generate(answers)
 
 
+
 def generate_recommendation(
     answers: list[dict],
     search_results: list[dict],
 ) -> dict:
     """
-    Генерирует рекомендацию только после полноценной
-    клинической оценки.
+    Генерирует рекомендацию после проверки безопасности истории.
     """
 
-    result = _check_triage(answers)
-
-    if result.status != "no_red_flags_detected":
-        raise TriageBlockedError(result)
+    _check_safety_history(answers)
 
     from rag_module.generation.recommendation_generator import (
         generate_recommendation as generate,
     )
 
     return generate(answers, search_results)
+
 
 def process_patient_answers(
     answers: list[dict],
