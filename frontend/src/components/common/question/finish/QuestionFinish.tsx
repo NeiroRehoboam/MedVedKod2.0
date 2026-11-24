@@ -1,4 +1,5 @@
-import { AlertCircle, AlertTriangle } from "lucide-react"
+import type { AiSessionResponse } from "@/api/generated/models"
+import { AlertCircle, AlertTriangle, ClipboardList } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import {
@@ -11,23 +12,21 @@ import { type PaymentType } from "@/data/payment.mock"
 import { Button } from "@maxhub/max-ui"
 import { DoctorSignature, PageDescription, PageTitle } from "../../typography"
 
-export type Urgency = "emergency" | "urgent" | "planned" | "self_care"
-
-export type TriageResult = {
-  specialist: string
-  specialistDescription: string
-  urgency: Urgency
-  place: string
-  recommendation: string
-  symptoms: string[]
-  reason: string
-}
+type Urgency = "emergency" | "urgent" | "planned" | "self_care" | "undetermined"
 
 type QuestionFinishProps = {
-  result?: TriageResult
+  result?: AiSessionResponse
   payment?: PaymentType
+  onRestart: () => void
 }
+
 const urgencyConfig = {
+  undetermined: {
+    label: "Не определена",
+    description: "",
+    className: "bg-max-tertiary text-max-text-primary",
+    iconClassName: "text-max-text-primary",
+  },
   emergency: {
     label: "Экстренно",
     description: "Необходима немедленная медицинская помощь.",
@@ -62,24 +61,56 @@ const urgencyConfig = {
   }
 >
 
-const demoResult: TriageResult = {
-  specialist: "Терапевт",
-  specialistDescription:
-    "Врач общей практики оценит ваше состояние и при необходимости направит к профильному специалисту.",
-  urgency: "emergency",
-  place: "Поликлиника",
-  recommendation:
-    "Запишитесь на консультацию к терапевту для оценки симптомов и определения дальнейших действий.",
-  symptoms: [
-    "Головная боль",
-    "Периодические симптомы",
-    "Продолжительность — несколько дней",
-  ],
-  reason:
-    "Это демонстрационный пример оформления результата. Реальная срочность и маршрут обращения должны определяться на основании ответов пациента и проверенных правил маршрутизации.",
-}
+export function QuestionFinish({
+  result: response,
+  onRestart,
+}: QuestionFinishProps) {
+  const recommendation = response?.recommendation
+  const isFallback = recommendation?.source === "fallback"
+  const text = (key: string) =>
+    typeof recommendation?.[key] === "string" ? recommendation[key] : ""
+  const rawUrgency =
+    response?.routing?.urgency ||
+    text("urgency") ||
+    response?.safety.urgency ||
+    ""
+  const normalized = rawUrgency.toLowerCase()
+  const urgencyKey: Urgency =
+    response?.safety.should_stop || normalized === "emergency"
+      ? "emergency"
+      : normalized === "urgent"
+        ? "urgent"
+        : normalized === "self_help" || normalized === "self_care"
+          ? "self_care"
+          : normalized === "planned"
+            ? "planned"
+            : "undetermined"
+  const result = {
+    urgency: urgencyKey,
+    recommendation:
+      response?.routing?.recommendations ||
+      text("recommendation") ||
+      response?.safety.recommended_action,
+    specialistDescription: text("doctor"),
+    place: text("place"),
+    symptoms: Array.isArray(recommendation?.evidence)
+      ? recommendation.evidence.filter(
+          (item): item is string => typeof item === "string"
+        )
+      : [],
+    reason:
+      response?.routing?.justification ||
+      text("justification") ||
+      response?.safety.reason,
+  }
 
-export function QuestionFinish({ result = demoResult }: QuestionFinishProps) {
+  const isEmergency = result.urgency === "emergency"
+  const showFallback = isFallback && !isEmergency
+
+  const hasDetails = Boolean(
+    result.specialistDescription || result.place || result.reason
+  )
+
   const navigate = useNavigate()
   const urgency = urgencyConfig[result.urgency]
 
@@ -99,86 +130,113 @@ export function QuestionFinish({ result = demoResult }: QuestionFinishProps) {
         </div>
 
         <PageDescription>
-          Мы собрали ваши ответы и подготовили предварительную рекомендацию.
+          {showFallback
+            ? "Не удалось сформировать индивидуальную рекомендацию."
+            : "Мы собрали ваши ответы и подготовили предварительную рекомендацию."}
         </PageDescription>
       </header>
 
       <div className="space-y-3">
-        {/* Срочность */}
-        <section
-          className={`flex items-start gap-3 rounded-max-medium p-4 shadow-sm ${urgency.className}`}
-        >
-          <AlertTriangle
-            size={18}
-            className={`mt-0.5 shrink-0 ${urgency.iconClassName}`}
-          />
+        {showFallback ? (
+          <section className="flex flex-col items-center px-4 py-8 text-center">
+            <div className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-500">
+              <ClipboardList size={30} strokeWidth={1.5} />
+            </div>
 
-          <div className="flex min-w-0 flex-col gap-1">
-            <p className="text-sm font-semibold">
-              Срочность обращения: {urgency.label}
+            <h3 className="max-w-xs text-xl leading-tight font-semibold tracking-tight text-max-text-primary">
+              Не удалось определить маршрут обращения
+            </h3>
+
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-max-text-secondary">
+              Для оценки вашего состояния рекомендуем обратиться к врачу.
             </p>
+          </section>
+        ) : (
+          <>
+            {/* Срочность */}
+            <section
+              className={`flex items-start gap-3 rounded-max-medium p-4 shadow-sm ${urgency.className}`}
+            >
+              <AlertTriangle
+                size={18}
+                className={`mt-0.5 shrink-0 ${urgency.iconClassName}`}
+              />
 
-            <p className="text-sm leading-5 opacity-80">
-              {urgency.description}
-            </p>
+              <div className="flex min-w-0 flex-col gap-1">
+                <p className="text-sm font-semibold">
+                  Срочность обращения: {urgency.label}
+                </p>
 
-            {result.urgency === "emergency" && (
-              <a
-                href="tel:112"
-                className="mt-4 inline-flex items-center justify-center rounded-max-medium bg-red-800 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-900"
-              >
-                Позвонить 112
-              </a>
+                {urgency.description && (
+                  <p className="text-sm leading-5 opacity-80">
+                    {urgency.description}
+                  </p>
+                )}
+
+                {isEmergency && (
+                  <a
+                    href="tel:112"
+                    className="mt-4 inline-flex items-center justify-center rounded-max-medium bg-red-800 px-5 py-3 text-sm font-semibold text-white"
+                  >
+                    Позвонить 112
+                  </a>
+                )}
+              </div>
+            </section>
+
+            {/* Рекомендации */}
+            {(result.recommendation || hasDetails) && (
+              <section className="space-y-4 rounded-max-medium bg-max-card p-5">
+                <PageTitle as="h4">Рекомендации</PageTitle>
+
+                {result.recommendation && (
+                  <PageDescription>{result.recommendation}</PageDescription>
+                )}
+
+                {hasDetails && (
+                  <Accordion className="border-0">
+                    {result.specialistDescription && (
+                      <AccordionItem
+                        value="specialist"
+                        className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
+                      >
+                        <AccordionTrigger>Специалист</AccordionTrigger>
+
+                        <AccordionContent>
+                          {result.specialistDescription}
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+
+                    {result.place && (
+                      <AccordionItem
+                        value="place"
+                        className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
+                      >
+                        <AccordionTrigger>Место обращения</AccordionTrigger>
+
+                        <AccordionContent>{result.place}</AccordionContent>
+                      </AccordionItem>
+                    )}
+
+                    {result.reason && (
+                      <AccordionItem
+                        value="reason"
+                        className="bg-transparent! data-open:bg-transparent!"
+                      >
+                        <AccordionTrigger>
+                          Обоснование рекомендации
+                        </AccordionTrigger>
+
+                        <AccordionContent>{result.reason}</AccordionContent>
+                      </AccordionItem>
+                    )}
+                  </Accordion>
+                )}
+              </section>
             )}
-          </div>
-        </section>
-
-        <section className="space-y-4 rounded-max-medium bg-max-card p-5">
-          <PageTitle as="h4">Рекомендации</PageTitle>
-
-          <PageDescription> {result.recommendation}</PageDescription>
-
-          <Accordion defaultValue={["plans"]} className={"border-0"}>
-            <AccordionItem
-              value="recommendation"
-              className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
-            >
-              <AccordionTrigger>О специалисте</AccordionTrigger>
-
-              <AccordionContent>
-                {result.specialistDescription}
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem
-              value="placen"
-              className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
-            >
-              <AccordionTrigger>Место обращения</AccordionTrigger>
-
-              <AccordionContent>{result.place}</AccordionContent>
-            </AccordionItem>
-            <AccordionItem
-              value="symptoms"
-              className="bg-transparent! data-open:bg-transparent!"
-            >
-              <AccordionTrigger>Учтённые симптомы</AccordionTrigger>
-
-              <AccordionContent>
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {result.symptoms.map((symptom, index) => (
-                    <span
-                      key={`${symptom}-${index}`}
-                      className="inline-flex items-center rounded-max-medium bg-max-tertiary px-3 py-1.5 text-xs leading-4 font-medium text-max-text-secondary"
-                    >
-                      {symptom}
-                    </span>
-                  ))}
-                </div>
-                <p>{result.reason}</p>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </section>
+          </>
+        )}
       </div>
 
       {/* Дисклеймер */}
@@ -207,13 +265,12 @@ export function QuestionFinish({ result = demoResult }: QuestionFinishProps) {
         >
           На главную
         </Button>
-
         <Button
           type="button"
           size="large"
           variant="secondary"
           stretched
-          onClick={() => navigate("/question")}
+          onClick={onRestart}
         >
           Новое обращение
         </Button>

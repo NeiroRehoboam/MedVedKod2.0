@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { House } from "lucide-react"
 import { IconButton } from "@maxhub/max-ui"
@@ -48,18 +47,20 @@ export function QuestionHeader({
           </IconButton>
         </div>
 
-        {questionIndex !== undefined && totalQuestions !== undefined && (
+        {questionIndex !== undefined && (
           <Progress
-            value={questionIndex + 1}
-            max={totalQuestions}
+            value={totalQuestions && totalQuestions > 1 ? questionIndex + 1 : 0}
+            max={Math.max(totalQuestions ?? 1, 1)}
             className="gap-3 **:data-[slot=progress-indicator]:rounded-max-medium **:data-[slot=progress-indicator]:bg-max-text-themed **:data-[slot=progress-track]:h-2 **:data-[slot=progress-track]:bg-max-tertiary"
           >
             <ProgressLabel className="text-sm font-normal text-max-text-secondary">
               Вопрос{" "}
               <span className="font-semibold text-max-text-primary">
                 {questionIndex + 1}
-              </span>{" "}
-              из {totalQuestions}
+              </span>
+              {totalQuestions !== undefined &&
+                totalQuestions > 1 &&
+                ` из ${totalQuestions}`}
             </ProgressLabel>
           </Progress>
         )}

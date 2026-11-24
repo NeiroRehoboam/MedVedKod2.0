@@ -25,9 +25,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AiSessionResponse,
   SendMessageRequestRequest,
   SendMessageResponse,
-  SessionDetail,
   SessionList
 } from '../models';
 
@@ -179,7 +179,7 @@ export function useAiSessionsList<TData = Awaited<ReturnType<typeof aiSessionsLi
 
 
 export type aiSessionsRetrieveResponse200 = {
-  data: SessionDetail
+  data: AiSessionResponse
   status: 200
 }
 
@@ -283,6 +283,190 @@ export function useAiSessionsRetrieve<TData = Awaited<ReturnType<typeof aiSessio
 
 
 
+export type aiSessionsCompleteCreateResponse200 = {
+  data: AiSessionResponse
+  status: 200
+}
+
+export type aiSessionsCompleteCreateResponseSuccess = (aiSessionsCompleteCreateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiSessionsCompleteCreateResponse = (aiSessionsCompleteCreateResponseSuccess)
+
+export const getAiSessionsCompleteCreateUrl = (sessionId: number,) => {
+
+
+
+
+  return `/api/ai/sessions/${sessionId}/complete/`
+}
+
+export const aiSessionsCompleteCreate = async (sessionId: number, options?: Parameters<typeof customFetch>[1]): Promise<aiSessionsCompleteCreateResponse> => {
+
+  return customFetch<aiSessionsCompleteCreateResponse>(getAiSessionsCompleteCreateUrl(sessionId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAiSessionsCompleteCreateMutationKey = () => ['aiSessionsCompleteCreate'] as const;
+
+export const getAiSessionsCompleteCreateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof aiSessionsCompleteCreate>>, TError,AiSessionsCompleteCreateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof aiSessionsCompleteCreate>>, TError,AiSessionsCompleteCreateMutationVariables, TContext> => {
+
+const mutationKey = getAiSessionsCompleteCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof aiSessionsCompleteCreate>>, AiSessionsCompleteCreateMutationVariables> = (props) => {
+          const {sessionId} = props ?? {};
+
+          return  aiSessionsCompleteCreate(sessionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AiSessionsCompleteCreateMutationResult = NonNullable<Awaited<ReturnType<typeof aiSessionsCompleteCreate>>>
+
+    export type AiSessionsCompleteCreateMutationError = unknown
+    export type AiSessionsCompleteCreateMutationVariables = {sessionId: number}
+
+    export const useAiSessionsCompleteCreate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof aiSessionsCompleteCreate>>, TError,AiSessionsCompleteCreateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof aiSessionsCompleteCreate>>,
+        TError,
+        AiSessionsCompleteCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAiSessionsCompleteCreateMutationOptions(options), queryClient);
+    }
+    export type aiSessionsInitialQuestionRetrieveResponse200 = {
+  data: AiSessionResponse
+  status: 200
+}
+
+export type aiSessionsInitialQuestionRetrieveResponseSuccess = (aiSessionsInitialQuestionRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiSessionsInitialQuestionRetrieveResponse = (aiSessionsInitialQuestionRetrieveResponseSuccess)
+
+export const getAiSessionsInitialQuestionRetrieveUrl = (sessionId: number,) => {
+
+
+
+
+  return `/api/ai/sessions/${sessionId}/initial-question/`
+}
+
+export const aiSessionsInitialQuestionRetrieve = async (sessionId: number, options?: Parameters<typeof customFetch>[1]): Promise<aiSessionsInitialQuestionRetrieveResponse> => {
+
+  return customFetch<aiSessionsInitialQuestionRetrieveResponse>(getAiSessionsInitialQuestionRetrieveUrl(sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAiSessionsInitialQuestionRetrieveQueryKey = (sessionId: number,) => {
+    return [
+    `/api/ai/sessions/${sessionId}/initial-question/`
+    ] as const;
+    }
+
+
+export const getAiSessionsInitialQuestionRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>, TError = unknown>(sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAiSessionsInitialQuestionRetrieveQueryKey(sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>> = ({ signal }) => aiSessionsInitialQuestionRetrieve(sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AiSessionsInitialQuestionRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>>
+export type AiSessionsInitialQuestionRetrieveQueryError = unknown
+
+
+export function useAiSessionsInitialQuestionRetrieve<TData = Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>, TError = unknown>(
+ sessionId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAiSessionsInitialQuestionRetrieve<TData = Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>, TError = unknown>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAiSessionsInitialQuestionRetrieve<TData = Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>, TError = unknown>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAiSessionsInitialQuestionRetrieve<TData = Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>, TError = unknown>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof aiSessionsInitialQuestionRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAiSessionsInitialQuestionRetrieveQueryOptions(sessionId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 export type aiSessionsMessageCreateResponse200 = {
   data: SendMessageResponse
   status: 200
@@ -364,7 +548,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getAiSessionsMessageCreateMutationOptions(options), queryClient);
     }
     export type aiSessionsStartCreateResponse201 = {
-  data: SessionDetail
+  data: AiSessionResponse
   status: 201
 }
 

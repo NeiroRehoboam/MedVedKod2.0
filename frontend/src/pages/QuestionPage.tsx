@@ -1,5 +1,6 @@
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { Spinner } from "@maxhub/max-ui"
 
 import {
   QuestionAnamnesis,
@@ -11,17 +12,44 @@ import {
 } from "@/components/common"
 
 import { useQuestionFlow } from "@/hooks/useQuestionFlow"
-import { useAiSession, useStartAiSession } from "@/hooks/useAiSessions"
+import {
+  useAiSession,
+  useStartAiSession,
+  useInitialQuestion,
+} from "@/hooks/useAiSessions"
 
-import { questions } from "@/data/questions-patient.mock"
+import type { AiSessionResponse } from "@/api/generated/models"
 
 export function QuestionPage() {
   const navigate = useNavigate()
   const { sessionId } = useParams<{ sessionId: string }>()
 
-  const flow = useQuestionFlow()
   const startSession = useStartAiSession()
   const sessionQuery = useAiSession(sessionId)
+  const isCompleted = sessionQuery.data?.session.status === "COMPLETED"
+  const flow = useQuestionFlow(sessionId, isCompleted)
+
+  const initialQuestionQuery = useInitialQuestion(
+    sessionId,
+    flow.step === "questions" && sessionQuery.isSuccess && !flow.isCompleted
+  )
+
+  const initialQuestionData = isCompleted ? sessionQuery.data : initialQuestionQuery.data?.data
+
+  const { applyResponse, setStep } = flow
+  const initializedSession = useRef<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (
+      initialQuestionData &&
+      sessionId &&
+      initializedSession.current !== sessionId
+    ) {
+      initializedSession.current = sessionId
+      applyResponse(initialQuestionData)
+      if (isCompleted) setStep("questions")
+    }
+  }, [initialQuestionData, sessionId, applyResponse, isCompleted, setStep])
 
   const isExistingSession = Boolean(sessionId)
   const createdSessionId = useRef<string | null>(null)
@@ -32,6 +60,15 @@ export function QuestionPage() {
   const handleExit = () => {
     flow.resetFlow()
     goHome()
+  }
+
+  const handleRestart = () => {
+    createdSessionId.current = null
+    creatingSession.current = false
+
+    flow.resetFlow()
+
+    navigate("/question", { replace: true })
   }
 
   const handleAnamnesisContinue = async () => {
@@ -46,7 +83,13 @@ export function QuestionPage() {
 
     try {
       const response = await startSession.mutateAsync()
-      const id = String(response.data.id)
+      const data: AiSessionResponse = response.data
+
+      if (data.session?.id == null) {
+        throw new Error("Бэкенд не вернул ID сессии")
+      }
+
+      const id = String(data.session.id)
 
       createdSessionId.current = id
 
@@ -58,7 +101,6 @@ export function QuestionPage() {
       creatingSession.current = false
     }
   }
-
   const renderStep = () => {
     switch (flow.step) {
       case "welcome":
@@ -79,6 +121,32 @@ export function QuestionPage() {
         )
 
       case "questions":
+        if (!flow.isCompleted && initialQuestionQuery.isError) {
+          return (
+            <p>
+              Не удалось загрузить вопрос.{" "}
+              <button
+                type="button"
+                onClick={() => void initialQuestionQuery.refetch()}
+              >
+                Попробовать снова
+              </button>
+            </p>
+          )
+        }
+
+        if (!flow.question) {
+          return (
+            <div
+              className="flex flex-1 items-center justify-center"
+              role="status"
+              aria-label="Загрузка вопроса"
+            >
+              <Spinner className="size-8" />
+            </div>
+          )
+        }
+
         return <QuestionStep flow={flow} />
 
       case "payment":
@@ -96,7 +164,13 @@ export function QuestionPage() {
         )
 
       case "finished":
-        return <QuestionFinish payment={flow.payment ?? undefined} />
+        return (
+          <QuestionFinish
+            result={flow.response}
+            payment={flow.payment ?? undefined}
+            onRestart={handleRestart}
+          />
+        )
     }
   }
 
@@ -131,7 +205,7 @@ export function QuestionPage() {
           onExit={handleExit}
           questionIndex={flow.step === "questions" ? flow.index : undefined}
           totalQuestions={
-            flow.step === "questions" ? questions.length : undefined
+            flow.step === "questions" ? flow.questions.length : undefined
           }
         />
       )}

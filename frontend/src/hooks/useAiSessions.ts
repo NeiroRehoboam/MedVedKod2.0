@@ -6,6 +6,7 @@ import {
   aiSessionsStartCreate,
   getAiSessionsListQueryKey,
   getAiSessionsRetrieveQueryKey,
+  useAiSessionsInitialQuestionRetrieve,
 } from "@/api/generated/ai-sessions/ai-sessions"
 
 export function useAiSessions() {
@@ -44,5 +45,15 @@ export function useAiSession(id?: string) {
     enabled: Boolean(id),
     retry: 1,
     staleTime: 60_000,
+  })
+}
+
+export function useInitialQuestion(sessionId?: string, enabled = true) {
+  const id = Number(sessionId)
+
+  return useAiSessionsInitialQuestionRetrieve(id, {
+    query: {
+      enabled: enabled && Number.isInteger(id) && id > 0,
+    },
   })
 }
