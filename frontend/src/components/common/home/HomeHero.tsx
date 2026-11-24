@@ -12,16 +12,14 @@ export function HomeHero({ onNewAppeal }: HomeHeroProps) {
     <div className="relative isolate">
       <section className="relative z-0 rounded-max-medium bg-max-primary p-6 sm:p-8">
         <div className="space-y-3">
-          <PageTitle as="h2">
-            Что вас
-            <br />
-            беспокоит?
-          </PageTitle>
+          <PageTitle as="h2">Что вас беспокоит?</PageTitle>
 
-          <PageDescription>
-            Расскажите о самочувствии. МедВедь задаст несколько вопросов и
-            поможет подготовиться к обращению к врачу.
-          </PageDescription>
+          <div className="max-w-lg!">
+            <PageDescription>
+              Расскажите о самочувствии. МедВедь задаст несколько вопросов и
+              поможет подготовиться к обращению к врачу.
+            </PageDescription>
+          </div>
         </div>
 
         <div className="mt-8">
