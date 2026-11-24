@@ -104,4 +104,7 @@ AUTH_USER_MODEL = 'auth_max.User'
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://10.0.10.29:80",
+    "http://10.2.10.29:80",
+    "https://mcode.shspu45.ru",
 ]
