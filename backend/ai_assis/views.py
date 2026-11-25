@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from patients.models import Patient
 from routing.models import RoutingResult
 from dictionaries.models import Specialty
+from dictionaries.serializers import PaymentTypeSerializer
 
 from .models import BaseQuestion, BaseQuestionOption, Session, SessionQuestion
 from .serializers import (
@@ -59,7 +60,7 @@ def _ai_questions(session):
 
 
 def _next_question(session) -> SessionQuestion | None:
-    unanswered = session.questions.filter(answer_text__isnull=True).order_by('order_number', 'id')
+    unanswered = session.questions.filter(answer_text_encrypted__isnull=True).order_by('order_number', 'id')
     return unanswered.filter(source=SessionQuestion.Source.SYSTEM).first() or unanswered.first()
 
 
@@ -74,12 +75,15 @@ def _session_response(
     response_status: int = status.HTTP_200_OK,
 ) -> Response:
     """Единая форма ответа для всех эндпоинтов AI-сессий."""
+    patient = getattr(session, 'patient', None)
+    preferred = getattr(patient, 'preferred_payment', None) if patient is not None else None
     data = {
         'status': status_value,
         'session': SessionDetailSerializer(session).data,
         'questions': SessionQuestionSerializer(_ordered_questions(session), many=True).data,
         'ai_questions': SessionQuestionSerializer(_ai_questions(session), many=True).data,
         'safety': safety,
+        'preferred_payment': PaymentTypeSerializer(preferred).data if preferred else None,
     }
     if next_question is not None:
         data['next_question'] = SessionQuestionSerializer(next_question).data
@@ -294,13 +298,13 @@ class SendMessageView(APIView):
 
         question.answer_text = user_text
         question.answered_at = timezone.now()
-        question.save(update_fields=['answer_text', 'answered_at'])
+        question.save(update_fields=['answer_text_encrypted', 'answered_at'])
 
         # Проверяется каждый ответ, включая ответы на AI-вопросы.
         # Вся история проверяется заново, чтобы признак, пропущенный ранее,
         # всё равно остановил опрос.
         safety = choose_worst_safety(
-            check_message_safety(user_text),
+            check_message_safety(user_text, patient=session.patient),
             get_session_safety(session, use_llm=False),
         )
 
@@ -358,10 +362,10 @@ class UpdateSessionAnswerView(APIView):
 
         question.answer_text = serializer.validated_data['answer_text']
         question.answered_at = timezone.now()
-        question.save(update_fields=['answer_text', 'answered_at'])
+        question.save(update_fields=['answer_text_encrypted', 'answered_at'])
 
         safety = choose_worst_safety(
-            check_message_safety(question.answer_text),
+            check_message_safety(question.answer_text, patient=session.patient),
             get_session_safety(session, use_llm=False),
         )
         if safety['should_stop']:

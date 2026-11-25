@@ -16,11 +16,16 @@ cp .env.example .env
 Copy-Item .env.example .env
 ```
 
+Обязательно задайте `SECRET_KEY` и `ENCRYPTION_PEPPER` — разные случайные значения, каждый генерируется командой `python -c "import secrets; print(secrets.token_urlsafe(64))"`. Без них backend не запустится.
+
 Заполните необходимые переменные окружения. Для запуска без авторизации через MAX установите:
 
 ```dotenv
 VITE_MOCK_AUTH=true
+ENABLE_DEMO_LOGIN=True
 ```
+
+Демо-вход подключается только при `DEBUG=True` и `ENABLE_DEMO_LOGIN=True`; в проде оставьте флаг выключенным — маршрут `/api/auth/demo/` тогда отсутствует.
 
 ## 2. Сборка и запуск
 

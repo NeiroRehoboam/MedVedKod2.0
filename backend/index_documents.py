@@ -14,10 +14,9 @@ for index, file in enumerate(pdf_files, start=1):
     print(f"\n[{index}/{len(pdf_files)}] Индексация: {file.name}")
 
     try:
-        result = index_document(str(file))
-        print(result)
+        index_document(str(file))
         print("Успешно!")
-    except Exception as error:
-        print(f"Ошибка: {error}")
+    except Exception:
+        print(f"Ошибка индексации: {file.name}")
 
 print("\nИндексация завершена")

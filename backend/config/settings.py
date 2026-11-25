@@ -1,13 +1,26 @@
 from pathlib import Path
 import os
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key')
+
+def _required_env(name):
+    value = os.getenv(name)
+    if not value:
+        raise ImproperlyConfigured(f'Переменная окружения {name} не задана')
+    if name == 'ENCRYPTION_PEPPER' and len(value) < 32:
+        raise ImproperlyConfigured('ENCRYPTION_PEPPER должен быть не короче 32 символов')
+    return value
+
+
+SECRET_KEY = _required_env('SECRET_KEY')
+ENCRYPTION_PEPPER = _required_env('ENCRYPTION_PEPPER')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
+ENABLE_DEMO_LOGIN = os.getenv('ENABLE_DEMO_LOGIN', 'False') == 'True'
 ALLOWED_HOSTS = ['*']
 
 # приложения

@@ -19,11 +19,16 @@ class Patient(models.Model):
     )
     registration_date = models.DateTimeField(auto_now_add=True)
 
-    def save(self, *args, **kwargs):
-        if self.diagnosis_encrypted and not self.diagnosis_encrypted.startswith('gAAAAA'):
-            self.diagnosis_encrypted = encrypt_string(self.diagnosis_encrypted)
-        super().save(*args, **kwargs)
+    @property
+    def _encryption_identity(self):
+        return f'user:{self.user_id}' if self.user_id else 'orphan'
 
     @property
-    def diagnosis(self): return decrypt_string(self.diagnosis_encrypted)
+    def diagnosis(self):
+        return decrypt_string(self.diagnosis_encrypted, self._encryption_identity)
+
+    @diagnosis.setter
+    def diagnosis(self, value):
+        self.diagnosis_encrypted = encrypt_string(value, self._encryption_identity) if value else None
+
     def __str__(self): return f"{self.last_name} {self.first_name}"

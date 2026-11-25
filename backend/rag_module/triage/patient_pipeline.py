@@ -1,4 +1,5 @@
 
+from rag_module.triage.deidentification import deidentify
 from rag_module.triage.errors import TriageBlockedError
 from rag_module.triage.message_safety_checker import check_message_safety
 from rag_module.triage.safety_integration import convert_safety_result
@@ -11,7 +12,7 @@ def _check_safety_history(answers: list[dict]) -> None:
     """Проверяет каждый ответ пациента на опасные признаки."""
 
     messages = [
-        item["answer"].strip()
+        deidentify(item["answer"]).strip()
         for item in answers
         if isinstance(item, dict)
         and isinstance(item.get("answer"), str)
@@ -45,7 +46,7 @@ def _build_search_query(extraction) -> str:
         if symptom.time == "future":
             continue
 
-        parts = [symptom.name]
+        parts = [deidentify(symptom.name)]
 
         if symptom.time != "unknown":
             parts.append(f"время: {symptom.time}")
@@ -54,12 +55,12 @@ def _build_search_query(extraction) -> str:
             parts.append(f"тяжесть: {symptom.severity}")
 
         if symptom.onset:
-            parts.append(f"начало: {symptom.onset}")
+            parts.append(f"начало: {deidentify(symptom.onset)}")
 
         if symptom.frequency != "unknown":
             parts.append(f"частота: {symptom.frequency}")
 
-        parts.extend(symptom.details)
+        parts.extend(deidentify(str(detail)) for detail in symptom.details)
 
         query_parts.append("; ".join(parts))
 
@@ -92,6 +93,16 @@ def process_patient_answers(
 
     if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1:
         raise ValueError("limit должен быть положительным целым числом.")
+
+    answers = [
+        {
+            key: deidentify(value) if isinstance(value, str) else value
+            for key, value in item.items()
+        }
+        if isinstance(item, dict)
+        else item
+        for item in answers
+    ]
 
     # 1. Проверяем все сообщения пациента.
     _check_safety_history(answers)
