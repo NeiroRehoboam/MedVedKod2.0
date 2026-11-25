@@ -258,19 +258,122 @@ def check_message_safety(message: str, use_llm: bool = True, patient=None) -> di
         return mapped
 
 
-def build_answers(session) -> list[dict]:
+_ANAMNESIS_STATUS_LABELS = {
+    "YES": "да",
+    "NO": "нет",
+    "UNKNOWN": "неизвестно",
+    "NA": "не применимо",
+    "never": "никогда",
+    "former": "ранее",
+    "current": "сейчас",
+    "sometimes": "иногда",
+    "regularly": "регулярно",
+}
+
+
+def _anamnesis_status(value, default="не указано") -> str:
+    if not isinstance(value, str) or not value.strip():
+        return default
+    return _ANAMNESIS_STATUS_LABELS.get(value, value.strip())
+
+
+def _anamnesis_relation_items(relation, ref_attr: str) -> list[str]:
+    items = []
+    for obj in relation.all():
+        ref = getattr(obj, ref_attr, None)
+        name = getattr(ref, "name", None) if ref is not None else None
+        custom = (getattr(obj, "custom_name", "") or "").strip()
+        label = str(name).strip() if name else custom
+        if label:
+            items.append(label)
+    return items
+
+
+def anamnesis_context(patient) -> str:
+    """Собирает обезличенный фон из анамнеза, не попадая в safety-проверку."""
+    if patient is None:
+        return ""
+
+    from anamnesis.models import Anamnesis
+    from rag_module.triage.deidentification import deidentify
+
+    try:
+        anamnesis = (
+            Anamnesis.objects.select_related("patient", "patient__user")
+            .prefetch_related(
+                "chronic_diseases__disease",
+                "hereditary_diseases__disease",
+                "medications__medication",
+                "allergies__allergen",
+            )
+            .get(patient=patient)
+        )
+    except Anamnesis.DoesNotExist:
+        return ""
+    except Exception:
+        logger.warning("Anamnesis context unavailable")
+        return ""
+
+    parts = []
+    smoking = _anamnesis_status(anamnesis.smoking_status)
+    alcohol = _anamnesis_status(anamnesis.alcohol_status)
+    if smoking != "не указано":
+        parts.append(f"курение: {smoking}")
+    if alcohol != "не указано":
+        parts.append(f"алкоголь: {alcohol}")
+
+    pregnancy = _anamnesis_status(anamnesis.pregnancy, default="неизвестно")
+    lactation = _anamnesis_status(anamnesis.lactation, default="неизвестно")
+    if pregnancy in {"да", "нет"}:
+        parts.append(f"беременность: {pregnancy}")
+    if lactation in {"да", "нет"}:
+        parts.append(f"лактация: {lactation}")
+
+    for label, items in (
+        ("хронические заболевания", _anamnesis_relation_items(anamnesis.chronic_diseases, "disease")),
+        ("наследственные заболевания", _anamnesis_relation_items(anamnesis.hereditary_diseases, "disease")),
+        ("лекарства", _anamnesis_relation_items(anamnesis.medications, "medication")),
+        ("аллергии", _anamnesis_relation_items(anamnesis.allergies, "allergen")),
+    ):
+        if items:
+            parts.append(f"{label}: {', '.join(items)}")
+
+    notes = (anamnesis.recent_events_notes or "").strip()
+    if notes:
+        parts.append(f"недавние события: {notes}")
+
+    if not parts:
+        return ""
+
+    text = "; ".join(parts)
+    return deidentify(text, patient_identifiers(patient)).strip()
+
+
+def build_answers(session, include_anamnesis: bool = False) -> list[dict]:
     """Преобразует сохранённые вопросы в историю rag_module: question/answer."""
     from rag_module.triage.deidentification import deidentify
 
     values = patient_identifiers(getattr(session, "patient", None))
-    return [
+    answers = []
+    if include_anamnesis:
+        context = anamnesis_context(getattr(session, "patient", None))
+        if context:
+            answers.append(
+                {
+                    "question": "Анамнез пациента (фон)",
+                    "answer": context,
+                }
+            )
+
+    answers.extend(
         {
             "question": deidentify(q.question_text or "", values),
             "answer": deidentify(q.answer_text.strip(), values),
         }
         for q in session.questions.order_by("order_number")
         if q.answer_text and q.answer_text.strip()
-    ]
+    )
+    return answers
 
 
 def get_session_safety(session, use_llm: bool = False) -> dict:
@@ -315,7 +418,7 @@ def generate_next_questions(session, count: int | None = None) -> list[str]:
     """
     count = ai_question_count() if count is None else count
     generated: list[str] = []
-    answers = build_answers(session)
+    answers = build_answers(session, include_anamnesis=True)
 
     try:
         from rag_module.config import GIGACHAT_CREDENTIALS
@@ -400,7 +503,9 @@ def generate_recommendation(session, safety: dict) -> dict:
     try:
         from rag_module import process_patient_answers
 
-        result = process_patient_answers(build_answers(session))
+        result = process_patient_answers(
+            build_answers(session, include_anamnesis=True)
+        )
         if isinstance(result, dict) and result:
             return {
                 "source": "rag",
