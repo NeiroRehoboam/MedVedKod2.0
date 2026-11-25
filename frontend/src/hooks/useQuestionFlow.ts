@@ -12,19 +12,12 @@ import {
 } from "@/api/generated/ai-sessions/ai-sessions"
 
 export type QuestionStepType =
-  | "welcome"
-  | "anamnesis"
-  | "questions"
-  | "payment"
-  | "finished"
+  "welcome" | "anamnesis" | "questions" | "payment" | "finished"
 
-export function useQuestionFlow(
-  sessionId?: string,
-  completedSession = false
-) {
+export function useQuestionFlow(sessionId?: string, completedSession = false) {
   const [response, setResponse] = useState<AiSessionResponse>()
   const queryClient = useQueryClient()
-  const [step, setStep] = useState<QuestionStepType>("payment")
+  const [step, setStep] = useState<QuestionStepType>("welcome")
   const [index, setIndex] = useState(0)
   const [drafts, setDrafts] = useState<Record<number, string>>({})
   const [payment, setPayment] = useState<number | null>(null)
@@ -51,22 +44,22 @@ export function useQuestionFlow(
 
   const answered = Boolean(question?.answer_text?.trim())
 
-  const answer =
-    isCompleted
-      ? question?.answer_text ?? ""
-      : drafts[question?.id] ?? question?.answer_text ?? ""
+  const answer = isCompleted
+    ? (question?.answer_text ?? "")
+    : (drafts[question?.id] ?? question?.answer_text ?? "")
 
-  const answerChanged = answered && answer.trim() !== question.answer_text?.trim()
+  const answerChanged =
+    answered && answer.trim() !== question.answer_text?.trim()
 
   const stopped =
-    emergencyPending ||
-    (!isCompleted && response?.safety.should_stop === true)
+    emergencyPending || (!isCompleted && response?.safety.should_stop === true)
 
   const isPending =
-    sendMessage.isPending || complete.isPending || updateAnswerMutation.isPending
+    sendMessage.isPending ||
+    complete.isPending ||
+    updateAnswerMutation.isPending
 
-  const isLast =
-    !isCompleted && Boolean(response && !response.next_question)
+  const isLast = !isCompleted && Boolean(response && !response.next_question)
 
   const canNext =
     !stopped &&
@@ -80,7 +73,9 @@ export function useQuestionFlow(
       setResponse(data)
 
       if (fromSubmission) {
-        void queryClient.invalidateQueries({ queryKey: getAiSessionsListQueryKey() })
+        void queryClient.invalidateQueries({
+          queryKey: getAiSessionsListQueryKey(),
+        })
         // Активный экран уже получил актуальные данные из mutation.
         for (const queryKey of [
           getAiSessionsRetrieveQueryKey(String(data.session.id)),
@@ -94,7 +89,9 @@ export function useQuestionFlow(
       // Критический случай при прохождении текущего опроса.
       // Проверяем ДО обработки статуса COMPLETED.
       if (fromSubmission && data.safety.should_stop) {
-        setIndex((prev) => Math.max(0, Math.min(prev, data.questions.length - 1)))
+        setIndex((prev) =>
+          Math.max(0, Math.min(prev, data.questions.length - 1))
+        )
         setEmergencyPending(true)
         setEmergencyOpen(true)
         setSheetOpen(false)
@@ -113,10 +110,7 @@ export function useQuestionFlow(
       setIndex(Math.max(0, nextIndex))
 
       // Восстановление незавершённой критической сессии.
-      if (
-        data.session.status !== "COMPLETED" &&
-        data.safety.should_stop
-      ) {
+      if (data.session.status !== "COMPLETED" && data.safety.should_stop) {
         setEmergencyPending(true)
         setEmergencyOpen(true)
       }
@@ -237,12 +231,7 @@ export function useQuestionFlow(
     questions,
 
     updateAnswer: (value: string) => {
-      if (
-        !busy.current &&
-        !isCompleted &&
-        !stopped &&
-        question
-      ) {
+      if (!busy.current && !isCompleted && !stopped && question) {
         setDrafts((prev) => ({
           ...prev,
           [question.id]: value,
@@ -287,8 +276,7 @@ export function useQuestionFlow(
     isPending,
     error,
 
-    readOnly:
-      isCompleted || stopped || isPending,
+    readOnly: isCompleted || stopped || isPending,
   }
 }
 

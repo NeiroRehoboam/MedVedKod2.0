@@ -8,11 +8,14 @@ import {
   usePatientsPatientsList,
   usePatientsPatientsMePreferredPaymentPartialUpdate,
 } from "@/api/generated/patients/patients"
+import { ArrowLeft } from "lucide-react"
 
 export function PaymentPreference({
   onSaved,
+  onBack,
 }: {
   onSaved?: (id: number) => void
+  onBack?: () => void
 }) {
   const payments = useDictionariesPaymentTypesList({
     query: {
@@ -79,7 +82,7 @@ export function PaymentPreference({
   const available = options.some((option) => option.id === value)
 
   return (
-    <div>
+    <div className="flex min-h-0 flex-1 flex-col">
       <div
         role="radiogroup"
         aria-label="Приоритетный тип оплаты"
@@ -113,21 +116,53 @@ export function PaymentPreference({
           Не удалось сохранить способ оплаты. Попробуйте снова.
         </p>
       )}
-      <Button
-        type="button"
-        size="large"
-        variant="primary"
-        stretched
-        disabled={!current || !available || save.isPending}
-        onClick={() => {
-          if (onSaved && value != null && value === current?.preferred_payment)
-            onSaved(value)
-          else if (value != null)
-            save.mutate({ data: { preferred_payment: value } })
-        }}
+      <div
+        className={`flex shrink-0 items-center gap-3 ${
+          onBack ? "mt-auto pt-4" : ""
+        }`}
       >
-        {save.isPending ? "Сохранение…" : onSaved ? "Завершить" : "Сохранить"}
-      </Button>
+        {" "}
+        {onBack && (
+          <Button
+            type="button"
+            size="large"
+            variant="secondary"
+            iconBefore={<ArrowLeft size={18} />}
+            disabled={save.isPending}
+            onClick={onBack}
+          >
+            Назад
+          </Button>
+        )}
+        <div className="min-w-0 flex-1">
+          <Button
+            type="button"
+            size="large"
+            variant="primary"
+            stretched
+            disabled={!current || !available || save.isPending}
+            onClick={() => {
+              if (
+                onSaved &&
+                value != null &&
+                value === current?.preferred_payment
+              ) {
+                onSaved(value)
+              } else if (value != null) {
+                save.mutate({
+                  data: { preferred_payment: value },
+                })
+              }
+            }}
+          >
+            {save.isPending
+              ? "Сохранение…"
+              : onSaved
+                ? "Завершить"
+                : "Сохранить"}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
