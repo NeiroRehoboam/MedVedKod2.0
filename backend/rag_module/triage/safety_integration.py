@@ -24,7 +24,11 @@ def convert_safety_result(
         return TriageResult(
             status="emergency",
             should_stop=True,
-            message=result.recommended_action,
+            message=(
+                f"Причина остановки опроса: {result.reason}\n\n"
+                f"Обнаруженные признаки: {', '.join(result.matched_signs)}\n\n"
+                f"{result.recommended_action}"
+            ),
             matched_rules=list(result.matched_signs),
             emergency_number="103 или 112",
         )

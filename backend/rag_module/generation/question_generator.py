@@ -64,6 +64,167 @@ def _question_tokens(question: str) -> set[str]:
         if len(word) > 2 and word not in STOP_WORDS
     }
 
+# Аспекты, которые система собирает во время опроса.
+ASPECT_PATTERNS = {
+    "location": (
+        r"в какой части",
+        r"где именно болит",
+        r"где именно ощущается",
+        r"локализ",
+        r"област[ьи] (головы|живота|груди|спины|тела)",
+        r"\bлоб\b",
+        r"затыл",
+        r"висок",
+        r"справа",
+        r"слева",
+    ),
+    "onset": (
+        r"когда нач",
+        r"когда впервые появ",
+        r"как давно",
+        r"с какого времени",
+        r"начал[ао]сь",
+        r"возникл[ао]",
+        r"внезапно",
+        r"постепенно",
+    ),
+    "duration": (
+        r"как долго",
+        r"сколько времени",
+        r"продолжительност",
+        r"сколько дл",
+        r"\d+\s*(час|дн|недел|месяц)",
+    ),
+    "intensity": (
+        r"интенсивност",
+        r"насколько сильн",
+        r"слабая",
+        r"умеренная",
+        r"сильная",
+        r"от 0 до 10",
+        r"оцените боль",
+    ),
+    "quality": (
+        r"характер",
+        r"какая боль",
+        r"пульсир",
+        r"давящ",
+        r"ноющ",
+        r"жгуч",
+        r"острая",
+        r"тупая",
+    ),
+    "frequency": (
+        r"как часто",
+        r"периодическ",
+        r"постоянно",
+        r"приступами",
+        r"повторяет",
+        r"частот",
+    ),
+    "associated_symptoms": (
+        r"сопутств",
+        r"вместе с",
+        r"тошнот",
+        r"рвот",
+        r"головокруж",
+        r"температур",
+        r"слабост",
+        r"онемени",
+        r"нарушени[ея] зрения",
+    ),
+    "triggers_and_relief": (
+        r"усиливает",
+        r"облегчает",
+        r"что провоцирует",
+        r"при наклоне",
+        r"при движении",
+        r"при физической нагрузке",
+        r"после отдыха",
+    ),
+    "daily_activity": (
+        r"повседнев",
+        r"обычной деятельност",
+        r"мешает работать",
+        r"мешает спать",
+        r"влияет на активност",
+    ),
+    "medical_history": (
+        r"хроническ",
+        r"заболевани",
+        r"принимаете лекарств",
+        r"какие лекарств",
+        r"медикамент",
+    ),
+}
+
+
+def _detect_aspects(text: str) -> set[str]:
+    """Определяет медицинские аспекты, упомянутые в тексте."""
+
+    normalized = _normalize_question(text)
+    detected = set()
+
+    for aspect, patterns in ASPECT_PATTERNS.items():
+        if any(
+            re.search(pattern, normalized)
+            for pattern in patterns
+        ):
+            detected.add(aspect)
+
+    return detected
+
+
+def _extract_covered_aspects(answers: list[dict]) -> set[str]:
+    """Определяет аспекты, которые действительно выяснены."""
+
+    covered = set()
+
+    unknown_patterns = (
+        r"^не знаю",
+        r"^не помню",
+        r"^не могу сказать",
+        r"^затрудняюсь",
+        r"^не уверен",
+        r"^не уверена",
+        r"^не могу определить",
+        r"^сложно ответить",
+        r"^не понял",
+        r"^не поняла",
+    )
+
+    for item in answers:
+        if not isinstance(item, dict):
+            continue
+
+        question = item.get("question", "")
+        answer = item.get("answer", "")
+
+        if not isinstance(question, str):
+            continue
+
+        if not isinstance(answer, str) or not answer.strip():
+            continue
+
+        normalized_answer = _normalize_question(answer)
+
+        # Не считаем аспект выясненным,
+        # если пользователь не смог ответить.
+        if any(
+            re.search(pattern, normalized_answer)
+            for pattern in unknown_patterns
+        ):
+            continue
+
+        # Аспект вопроса считается выясненным,
+        # только если пользователь дал содержательный ответ.
+        covered.update(_detect_aspects(question))
+
+        # Также учитываем сведения, которые пользователь
+        # самостоятельно сообщил в ответе.
+        covered.update(_detect_aspects(answer))
+
+    return covered
 
 def _is_duplicate_question(
     new_question: str,
@@ -156,17 +317,23 @@ def _build_prompt(
     context: str,
     previous_questions: list[str],
     rejected_question: str | None = None,
+    covered_aspects: set[str] | None = None,
 ) -> str:
     """Формирует инструкции для генерации следующего вопроса."""
 
     previous_questions_text = "\n".join(
         f"- {question}" for question in previous_questions
     )
-
+    covered_aspects_text = (
+        ", ".join(sorted(covered_aspects))
+        if covered_aspects
+        else "Пока не определены"
+    )
     retry_instruction = ""
 
     if rejected_question:
         retry_instruction = f"""
+
 ПРЕДЫДУЩИЙ ВАРИАНТ ОТКЛОНЁН:
 
 {rejected_question}
@@ -250,6 +417,14 @@ def _build_prompt(
    верни пустой массив options.
 6. Не помещай сам вопрос в варианты ответа.
 
+УЖЕ ВЫЯСНЕННЫЕ МЕДИЦИНСКИЕ АСПЕКТЫ:
+
+{covered_aspects_text}
+
+Не задавай вопросы об этих аспектах повторно,
+даже если можно сформулировать их другими словами.
+Выбирай только действительно новую информацию.
+
 ПРЕДЫДУЩИЕ ВОПРОСЫ:
 
 {previous_questions_text}
@@ -309,6 +484,7 @@ def generate_next_question(
         )
 
     context, previous_questions = _extract_answers(answers)
+    covered_aspects = _extract_covered_aspects(answers)
 
     rejected_question = None
 
@@ -324,6 +500,7 @@ def generate_next_question(
                 context=context,
                 previous_questions=previous_questions,
                 rejected_question=rejected_question,
+                covered_aspects=covered_aspects,
             )
 
             request = ChatCompletionRequest(
@@ -379,6 +556,12 @@ def generate_next_question(
                 question,
                 previous_questions,
             ):
+                rejected_question = question
+                continue
+
+            question_aspects = _detect_aspects(question)
+
+            if question_aspects & covered_aspects:
                 rejected_question = question
                 continue
 
