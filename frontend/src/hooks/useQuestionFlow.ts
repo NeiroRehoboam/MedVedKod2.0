@@ -181,21 +181,32 @@ export function useQuestionFlow(sessionId?: string, completedSession = false) {
         return
       }
 
-      const result = await complete.mutateAsync({
-        sessionId: Number(sessionId),
-      })
-
-      applyResponse(result.data, true)
-
-      if (!result.data.safety.should_stop) {
-        setStep("payment")
-      }
+      setStep("payment")
     } catch {
       setError(
         answerChanged
           ? "Не удалось сохранить ответ. Попробуйте ещё раз."
           : "Не удалось отправить данные. Попробуйте ещё раз."
       )
+    } finally {
+      busy.current = false
+    }
+  }
+
+  const completeAfterPayment = async (paymentId: number) => {
+    if (busy.current || !sessionId) return
+    busy.current = true
+    setError(null)
+    setPayment(paymentId)
+
+    try {
+      const result = await complete.mutateAsync({
+        sessionId: Number(sessionId),
+      })
+      applyResponse(result.data, true)
+      setStep(result.data.safety.should_stop ? "questions" : "finished")
+    } catch {
+      setError("Не удалось сформировать результат. Попробуйте ещё раз.")
     } finally {
       busy.current = false
     }
@@ -243,6 +254,7 @@ export function useQuestionFlow(sessionId?: string, completedSession = false) {
     isLast,
     canNext,
     handleNext,
+    completeAfterPayment,
 
     handleBack: () => {
       if (busy.current || stopped) return

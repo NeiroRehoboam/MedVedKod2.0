@@ -176,11 +176,10 @@ export function QuestionPage() {
       case "payment":
         return (
           <QuestionPayment
+            isPending={flow.isPending}
+            error={flow.error}
             onBack={() => flow.setStep("questions")}
-            onContinue={(id) => {
-              flow.setPayment(id)
-              flow.setStep("finished")
-            }}
+            onContinue={flow.completeAfterPayment}
           />
         )
 

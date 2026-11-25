@@ -13,9 +13,11 @@ import { ArrowLeft } from "lucide-react"
 export function PaymentPreference({
   onSaved,
   onBack,
+  isPending = false,
 }: {
   onSaved?: (id: number) => void
   onBack?: () => void
+  isPending?: boolean
 }) {
   const payments = useDictionariesPaymentTypesList({
     query: {
@@ -100,7 +102,7 @@ export function PaymentPreference({
               name="payment"
               aria-label={option.name}
               checked={value === option.id}
-              disabled={save.isPending}
+              disabled={save.isPending || isPending}
               onChange={() => {
                 setSelected(option.id)
                 save.reset()
@@ -128,7 +130,7 @@ export function PaymentPreference({
             size="large"
             variant="secondary"
             iconBefore={<ArrowLeft size={18} />}
-            disabled={save.isPending}
+            disabled={save.isPending || isPending}
             onClick={onBack}
           >
             Назад
@@ -140,7 +142,7 @@ export function PaymentPreference({
             size="large"
             variant="primary"
             stretched
-            disabled={!current || !available || save.isPending}
+            disabled={!current || !available || save.isPending || isPending}
             onClick={() => {
               if (
                 onSaved &&
@@ -155,7 +157,7 @@ export function PaymentPreference({
               }
             }}
           >
-            {save.isPending
+            {isPending ? "Формируем результат…" : save.isPending
               ? "Сохранение…"
               : onSaved
                 ? "Завершить"

@@ -4,11 +4,15 @@ import { PaymentPreference } from "../../profile/PaymentPreference"
 import { PageDescription, PageTitle } from "../../typography"
 
 type QuestionPaymentProps = {
+  isPending: boolean
+  error: string | null
   onContinue: (id: number) => void
   onBack: () => void
 }
 
 export function QuestionPayment({
+  isPending,
+  error,
   onContinue,
   onBack,
 }: QuestionPaymentProps) {
@@ -29,9 +33,11 @@ export function QuestionPayment({
       </div>
 
       <PaymentPreference
+        isPending={isPending}
         onSaved={onContinue}
         onBack={onBack}
       />
+      {error && <p role="alert">{error}</p>}
     </section>
   )
 }
