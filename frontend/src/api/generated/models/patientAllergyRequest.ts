@@ -9,6 +9,5 @@
 export interface PatientAllergyRequest {
   /** @nullable */
   allergen?: number | null;
-  /** @maxLength 200 */
   custom_name?: string;
 }

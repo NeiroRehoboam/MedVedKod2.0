@@ -13,7 +13,6 @@ User = get_user_model()
 
 
 @extend_schema(
-    exclude=True,
     tags=["Auth"],
     request=None,
     responses={200: UserProfileSerializer},

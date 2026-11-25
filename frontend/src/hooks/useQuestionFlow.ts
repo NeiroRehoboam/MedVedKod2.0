@@ -1,5 +1,4 @@
-﻿import { useCallback, useRef, useState } from "react"
-import type { PaymentType } from "@/data/payment.mock"
+import { useCallback, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import type { AiSessionResponse } from "@/api/generated/models"
 import {
@@ -13,22 +12,15 @@ import {
 } from "@/api/generated/ai-sessions/ai-sessions"
 
 export type QuestionStepType =
-  | "welcome"
-  | "anamnesis"
-  | "questions"
-  | "payment"
-  | "finished"
+  "welcome" | "anamnesis" | "questions" | "payment" | "finished"
 
-export function useQuestionFlow(
-  sessionId?: string,
-  completedSession = false
-) {
+export function useQuestionFlow(sessionId?: string, completedSession = false) {
   const [response, setResponse] = useState<AiSessionResponse>()
   const queryClient = useQueryClient()
   const [step, setStep] = useState<QuestionStepType>("welcome")
   const [index, setIndex] = useState(0)
   const [drafts, setDrafts] = useState<Record<number, string>>({})
-  const [payment, setPayment] = useState<PaymentType | null>(null)
+  const [payment, setPayment] = useState<number | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [emergencyOpen, setEmergencyOpen] = useState(false)
   const [emergencyPending, setEmergencyPending] = useState(false)
@@ -52,22 +44,22 @@ export function useQuestionFlow(
 
   const answered = Boolean(question?.answer_text?.trim())
 
-  const answer =
-    isCompleted
-      ? question?.answer_text ?? ""
-      : drafts[question?.id] ?? question?.answer_text ?? ""
+  const answer = isCompleted
+    ? (question?.answer_text ?? "")
+    : (drafts[question?.id] ?? question?.answer_text ?? "")
 
-  const answerChanged = answered && answer.trim() !== question.answer_text?.trim()
+  const answerChanged =
+    answered && answer.trim() !== question.answer_text?.trim()
 
   const stopped =
-    emergencyPending ||
-    (!isCompleted && response?.safety.should_stop === true)
+    emergencyPending || (!isCompleted && response?.safety.should_stop === true)
 
   const isPending =
-    sendMessage.isPending || complete.isPending || updateAnswerMutation.isPending
+    sendMessage.isPending ||
+    complete.isPending ||
+    updateAnswerMutation.isPending
 
-  const isLast =
-    !isCompleted && Boolean(response && !response.next_question)
+  const isLast = !isCompleted && Boolean(response && !response.next_question)
 
   const canNext =
     !stopped &&
@@ -81,7 +73,9 @@ export function useQuestionFlow(
       setResponse(data)
 
       if (fromSubmission) {
-        void queryClient.invalidateQueries({ queryKey: getAiSessionsListQueryKey() })
+        void queryClient.invalidateQueries({
+          queryKey: getAiSessionsListQueryKey(),
+        })
         // Активный экран уже получил актуальные данные из mutation.
         for (const queryKey of [
           getAiSessionsRetrieveQueryKey(String(data.session.id)),
@@ -95,7 +89,9 @@ export function useQuestionFlow(
       // Критический случай при прохождении текущего опроса.
       // Проверяем ДО обработки статуса COMPLETED.
       if (fromSubmission && data.safety.should_stop) {
-        setIndex((prev) => Math.max(0, Math.min(prev, data.questions.length - 1)))
+        setIndex((prev) =>
+          Math.max(0, Math.min(prev, data.questions.length - 1))
+        )
         setEmergencyPending(true)
         setEmergencyOpen(true)
         setSheetOpen(false)
@@ -114,10 +110,7 @@ export function useQuestionFlow(
       setIndex(Math.max(0, nextIndex))
 
       // Восстановление незавершённой критической сессии.
-      if (
-        data.session.status !== "COMPLETED" &&
-        data.safety.should_stop
-      ) {
+      if (data.session.status !== "COMPLETED" && data.safety.should_stop) {
         setEmergencyPending(true)
         setEmergencyOpen(true)
       }
@@ -188,21 +181,32 @@ export function useQuestionFlow(
         return
       }
 
-      const result = await complete.mutateAsync({
-        sessionId: Number(sessionId),
-      })
-
-      applyResponse(result.data, true)
-
-      if (!result.data.safety.should_stop) {
-        setStep("payment")
-      }
+      setStep("payment")
     } catch {
       setError(
         answerChanged
           ? "Не удалось сохранить ответ. Попробуйте ещё раз."
           : "Не удалось отправить данные. Попробуйте ещё раз."
       )
+    } finally {
+      busy.current = false
+    }
+  }
+
+  const completeAfterPayment = async (paymentId: number) => {
+    if (busy.current || !sessionId) return
+    busy.current = true
+    setError(null)
+    setPayment(paymentId)
+
+    try {
+      const result = await complete.mutateAsync({
+        sessionId: Number(sessionId),
+      })
+      applyResponse(result.data, true)
+      setStep(result.data.safety.should_stop ? "questions" : "finished")
+    } catch {
+      setError("Не удалось сформировать результат. Попробуйте ещё раз.")
     } finally {
       busy.current = false
     }
@@ -238,12 +242,7 @@ export function useQuestionFlow(
     questions,
 
     updateAnswer: (value: string) => {
-      if (
-        !busy.current &&
-        !isCompleted &&
-        !stopped &&
-        question
-      ) {
+      if (!busy.current && !isCompleted && !stopped && question) {
         setDrafts((prev) => ({
           ...prev,
           [question.id]: value,
@@ -255,6 +254,7 @@ export function useQuestionFlow(
     isLast,
     canNext,
     handleNext,
+    completeAfterPayment,
 
     handleBack: () => {
       if (busy.current || stopped) return
@@ -288,8 +288,7 @@ export function useQuestionFlow(
     isPending,
     error,
 
-    readOnly:
-      isCompleted || stopped || isPending,
+    readOnly: isCompleted || stopped || isPending,
   }
 }
 

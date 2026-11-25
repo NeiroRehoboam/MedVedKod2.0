@@ -5,10 +5,12 @@ from unittest.mock import MagicMock, patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from drf_spectacular.generators import SchemaGenerator
 from rest_framework.test import APIClient
 
 from ai_assis import services as ai_services
-from ai_assis.models import BaseQuestion, Session, SessionQuestion
+from ai_assis.models import BaseQuestion, BaseQuestionOption, Session, SessionQuestion
+from ai_assis.serializers import SessionQuestionSerializer
 from anamnesis.models import (
     Anamnesis,
     PatientAllergy,
@@ -42,6 +44,52 @@ class AiSessionApiTests(TestCase):
         return response.data
 
     @patch("ai_assis.views.generate_next_questions", return_value=[f"Вопрос {i}?" for i in range(1, 7)])
+    def test_options_are_snapshotted_at_start_and_survive_base_changes(self, _generate):
+        base = BaseQuestion.objects.get(text="Что вас беспокоит?")
+        BaseQuestionOption.objects.create(question=base, text="Болит голова", order=1)
+
+        data = self._start()
+        self.assertEqual(data["questions"][0]["options"][0]["text"], "Болит голова")
+        self.assertEqual(data["next_question"]["options"], data["questions"][0]["options"])
+
+        question = SessionQuestion.objects.get(id=data["questions"][0]["id"])
+        self.assertEqual(question.options[0]["text"], "Болит голова")
+
+        base.is_active = False
+        base.save(update_fields=["is_active"])
+        response = self.client.get(
+            reverse("sessions-detail", args=[data["session"]["id"]])
+        )
+        self.assertEqual(
+            response.data["questions"][0]["options"],
+            data["questions"][0]["options"],
+        )
+
+    def test_openapi_describes_options_as_array_of_option_objects(self):
+        schema = SchemaGenerator().get_schema(request=None, public=True)
+        options = schema["components"]["schemas"]["SessionQuestion"]["properties"]["options"]
+        self.assertEqual(options["type"], "array")
+        self.assertIn("$ref", options["items"])
+
+    def test_options_fallback_to_base_question_for_old_sessions(self):
+        base = BaseQuestion.objects.create(
+            text="Старый вопрос", order=3, is_multiple_choice=True
+        )
+        BaseQuestionOption.objects.create(question=base, text="Вариант", order=1)
+        base.is_active = False
+        base.save(update_fields=["is_active"])
+        session = Session.objects.create(patient=self.patient)
+        question = SessionQuestion.objects.create(
+            session=session,
+            question_text="Старый вопрос",
+            order_number=1,
+            source=SessionQuestion.Source.SYSTEM,
+        )
+
+        options = SessionQuestionSerializer(question).data["options"]
+        self.assertEqual(options[0]["text"], "Вариант")
+
+    @patch("ai_assis.views.generate_next_questions", return_value=[f"Вопрос {i}?" for i in range(1, 7)])
     def test_session_response_includes_preferred_payment(self, _generate):
         payment = PaymentType.objects.create(name="Тестовая оплата")
         self.patient.preferred_payment = payment
@@ -72,6 +120,19 @@ class AiSessionApiTests(TestCase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.data["questions"], data["questions"])
+
+    @patch("ai_assis.views.generate_next_questions", return_value=[f"Вопрос {i}?" for i in range(1, 7)])
+    def test_ai_questions_have_empty_options(self, _generate):
+        data = self._start()
+        session_id = data["session"]["id"]
+        response = self.client.post(
+            reverse("send-message", args=[session_id]),
+            {"content": "Болит поясница", "question_id": data["questions"][0]["id"]},
+            format="json",
+        )
+        self.assertEqual(len(response.data["ai_questions"]), 6)
+        self.assertTrue(all(q["options"] == [] for q in response.data["ai_questions"]))
+        self.assertEqual(response.data["next_question"]["options"], [])
 
     @patch("ai_assis.views.generate_next_questions", return_value=[f"Вопрос {i}?" for i in range(1, 7)])
     def test_message_saves_answer_and_returns_six_ai_questions(self, mock_generate):

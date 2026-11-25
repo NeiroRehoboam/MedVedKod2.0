@@ -10,7 +10,6 @@ import type { IntakeModeEnum } from './intakeModeEnum';
 export interface PatientMedicationRequest {
   /** @nullable */
   medication?: number | null;
-  /** @maxLength 200 */
   custom_name?: string;
   intake_mode?: IntakeModeEnum;
 }

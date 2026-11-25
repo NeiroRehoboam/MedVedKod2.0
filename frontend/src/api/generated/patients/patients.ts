@@ -25,9 +25,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  PatchedPatientRequest,
-  Patient,
-  PatientRequest
+  PatchedPreferredPaymentUpdateRequest,
+  Patient
 } from '../models';
 
 import { customFetch } from '../../fetcher';
@@ -177,86 +176,7 @@ export function usePatientsPatientsList<TData = Awaited<ReturnType<typeof patien
 
 
 
-export type patientsPatientsCreateResponse201 = {
-  data: Patient
-  status: 201
-}
-
-export type patientsPatientsCreateResponseSuccess = (patientsPatientsCreateResponse201) & {
-  headers: Headers;
-};
-;
-
-export type patientsPatientsCreateResponse = (patientsPatientsCreateResponseSuccess)
-
-export const getPatientsPatientsCreateUrl = () => {
-
-
-
-
-  return `/api/patients/patients/`
-}
-
-export const patientsPatientsCreate = async (patientRequest?: PatientRequest, options?: Parameters<typeof customFetch>[1]): Promise<patientsPatientsCreateResponse> => {
-
-  return customFetch<patientsPatientsCreateResponse>(getPatientsPatientsCreateUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(patientRequest)
-  }
-);}
-
-
-
-
-
-export const getPatientsPatientsCreateMutationKey = () => ['patientsPatientsCreate'] as const;
-
-export const getPatientsPatientsCreateMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsCreate>>, TError,PatientsPatientsCreateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsCreate>>, TError,PatientsPatientsCreateMutationVariables, TContext> => {
-
-const mutationKey = getPatientsPatientsCreateMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patientsPatientsCreate>>, PatientsPatientsCreateMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  patientsPatientsCreate(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PatientsPatientsCreateMutationResult = NonNullable<Awaited<ReturnType<typeof patientsPatientsCreate>>>
-    export type PatientsPatientsCreateMutationBody = PatientRequest | undefined
-    export type PatientsPatientsCreateMutationError = unknown
-    export type PatientsPatientsCreateMutationVariables = {data?: PatientRequest}
-
-    export const usePatientsPatientsCreate = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsCreate>>, TError,PatientsPatientsCreateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof patientsPatientsCreate>>,
-        TError,
-        PatientsPatientsCreateMutationVariables,
-        TContext
-      > => {
-      return useMutation(getPatientsPatientsCreateMutationOptions(options), queryClient);
-    }
-    export type patientsPatientsRetrieveResponse200 = {
+export type patientsPatientsRetrieveResponse200 = {
   data: Patient
   status: 200
 }
@@ -361,115 +281,34 @@ export function usePatientsPatientsRetrieve<TData = Awaited<ReturnType<typeof pa
 
 
 
-export type patientsPatientsUpdateResponse200 = {
+export type patientsPatientsMePreferredPaymentPartialUpdateResponse200 = {
   data: Patient
   status: 200
 }
 
-export type patientsPatientsUpdateResponseSuccess = (patientsPatientsUpdateResponse200) & {
+export type patientsPatientsMePreferredPaymentPartialUpdateResponseSuccess = (patientsPatientsMePreferredPaymentPartialUpdateResponse200) & {
   headers: Headers;
 };
 ;
 
-export type patientsPatientsUpdateResponse = (patientsPatientsUpdateResponseSuccess)
+export type patientsPatientsMePreferredPaymentPartialUpdateResponse = (patientsPatientsMePreferredPaymentPartialUpdateResponseSuccess)
 
-export const getPatientsPatientsUpdateUrl = (id: string,) => {
-
-
+export const getPatientsPatientsMePreferredPaymentPartialUpdateUrl = () => {
 
 
-  return `/api/patients/patients/${id}/`
+
+
+  return `/api/patients/patients/me/preferred-payment/`
 }
 
-export const patientsPatientsUpdate = async (id: string,
-    patientRequest?: PatientRequest, options?: Parameters<typeof customFetch>[1]): Promise<patientsPatientsUpdateResponse> => {
+export const patientsPatientsMePreferredPaymentPartialUpdate = async (patchedPreferredPaymentUpdateRequest?: PatchedPreferredPaymentUpdateRequest, options?: Parameters<typeof customFetch>[1]): Promise<patientsPatientsMePreferredPaymentPartialUpdateResponse> => {
 
-  return customFetch<patientsPatientsUpdateResponse>(getPatientsPatientsUpdateUrl(id),
-  {
-    ...options,
-    method: 'PUT',
-    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(patientRequest)
-  }
-);}
-
-
-
-
-
-export const getPatientsPatientsUpdateMutationKey = () => ['patientsPatientsUpdate'] as const;
-
-export const getPatientsPatientsUpdateMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsUpdate>>, TError,PatientsPatientsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsUpdate>>, TError,PatientsPatientsUpdateMutationVariables, TContext> => {
-
-const mutationKey = getPatientsPatientsUpdateMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patientsPatientsUpdate>>, PatientsPatientsUpdateMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  patientsPatientsUpdate(id,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PatientsPatientsUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof patientsPatientsUpdate>>>
-    export type PatientsPatientsUpdateMutationBody = PatientRequest | undefined
-    export type PatientsPatientsUpdateMutationError = unknown
-    export type PatientsPatientsUpdateMutationVariables = {id: string;data?: PatientRequest}
-
-    export const usePatientsPatientsUpdate = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsUpdate>>, TError,PatientsPatientsUpdateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof patientsPatientsUpdate>>,
-        TError,
-        PatientsPatientsUpdateMutationVariables,
-        TContext
-      > => {
-      return useMutation(getPatientsPatientsUpdateMutationOptions(options), queryClient);
-    }
-    export type patientsPatientsPartialUpdateResponse200 = {
-  data: Patient
-  status: 200
-}
-
-export type patientsPatientsPartialUpdateResponseSuccess = (patientsPatientsPartialUpdateResponse200) & {
-  headers: Headers;
-};
-;
-
-export type patientsPatientsPartialUpdateResponse = (patientsPatientsPartialUpdateResponseSuccess)
-
-export const getPatientsPatientsPartialUpdateUrl = (id: string,) => {
-
-
-
-
-  return `/api/patients/patients/${id}/`
-}
-
-export const patientsPatientsPartialUpdate = async (id: string,
-    patchedPatientRequest?: PatchedPatientRequest, options?: Parameters<typeof customFetch>[1]): Promise<patientsPatientsPartialUpdateResponse> => {
-
-  return customFetch<patientsPatientsPartialUpdateResponse>(getPatientsPatientsPartialUpdateUrl(id),
+  return customFetch<patientsPatientsMePreferredPaymentPartialUpdateResponse>(getPatientsPatientsMePreferredPaymentPartialUpdateUrl(),
   {
     ...options,
     method: 'PATCH',
     headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(patchedPatientRequest)
+    body: JSON.stringify(patchedPreferredPaymentUpdateRequest)
   }
 );}
 
@@ -477,13 +316,13 @@ export const patientsPatientsPartialUpdate = async (id: string,
 
 
 
-export const getPatientsPatientsPartialUpdateMutationKey = () => ['patientsPatientsPartialUpdate'] as const;
+export const getPatientsPatientsMePreferredPaymentPartialUpdateMutationKey = () => ['patientsPatientsMePreferredPaymentPartialUpdate'] as const;
 
-export const getPatientsPatientsPartialUpdateMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsPartialUpdate>>, TError,PatientsPatientsPartialUpdateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsPartialUpdate>>, TError,PatientsPatientsPartialUpdateMutationVariables, TContext> => {
+export const getPatientsPatientsMePreferredPaymentPartialUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsMePreferredPaymentPartialUpdate>>, TError,PatientsPatientsMePreferredPaymentPartialUpdateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsMePreferredPaymentPartialUpdate>>, TError,PatientsPatientsMePreferredPaymentPartialUpdateMutationVariables, TContext> => {
 
-const mutationKey = getPatientsPatientsPartialUpdateMutationKey();
+const mutationKey = getPatientsPatientsMePreferredPaymentPartialUpdateMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -493,10 +332,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patientsPatientsPartialUpdate>>, PatientsPatientsPartialUpdateMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patientsPatientsMePreferredPaymentPartialUpdate>>, PatientsPatientsMePreferredPaymentPartialUpdateMutationVariables> = (props) => {
+          const {data} = props ?? {};
 
-          return  patientsPatientsPartialUpdate(id,data,requestOptions)
+          return  patientsPatientsMePreferredPaymentPartialUpdate(data,requestOptions)
         }
 
 
@@ -506,97 +345,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PatientsPatientsPartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof patientsPatientsPartialUpdate>>>
-    export type PatientsPatientsPartialUpdateMutationBody = PatchedPatientRequest | undefined
-    export type PatientsPatientsPartialUpdateMutationError = unknown
-    export type PatientsPatientsPartialUpdateMutationVariables = {id: string;data?: PatchedPatientRequest}
+    export type PatientsPatientsMePreferredPaymentPartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof patientsPatientsMePreferredPaymentPartialUpdate>>>
+    export type PatientsPatientsMePreferredPaymentPartialUpdateMutationBody = PatchedPreferredPaymentUpdateRequest | undefined
+    export type PatientsPatientsMePreferredPaymentPartialUpdateMutationError = unknown
+    export type PatientsPatientsMePreferredPaymentPartialUpdateMutationVariables = {data?: PatchedPreferredPaymentUpdateRequest}
 
-    export const usePatientsPatientsPartialUpdate = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsPartialUpdate>>, TError,PatientsPatientsPartialUpdateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+    export const usePatientsPatientsMePreferredPaymentPartialUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsMePreferredPaymentPartialUpdate>>, TError,PatientsPatientsMePreferredPaymentPartialUpdateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof patientsPatientsPartialUpdate>>,
+        Awaited<ReturnType<typeof patientsPatientsMePreferredPaymentPartialUpdate>>,
         TError,
-        PatientsPatientsPartialUpdateMutationVariables,
+        PatientsPatientsMePreferredPaymentPartialUpdateMutationVariables,
         TContext
       > => {
-      return useMutation(getPatientsPatientsPartialUpdateMutationOptions(options), queryClient);
-    }
-    export type patientsPatientsDestroyResponse204 = {
-  data: void
-  status: 204
-}
-
-export type patientsPatientsDestroyResponseSuccess = (patientsPatientsDestroyResponse204) & {
-  headers: Headers;
-};
-;
-
-export type patientsPatientsDestroyResponse = (patientsPatientsDestroyResponseSuccess)
-
-export const getPatientsPatientsDestroyUrl = (id: string,) => {
-
-
-
-
-  return `/api/patients/patients/${id}/`
-}
-
-export const patientsPatientsDestroy = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<patientsPatientsDestroyResponse> => {
-
-  return customFetch<patientsPatientsDestroyResponse>(getPatientsPatientsDestroyUrl(id),
-  {
-    ...options,
-    method: 'DELETE'
-
-
-  }
-);}
-
-
-
-
-
-export const getPatientsPatientsDestroyMutationKey = () => ['patientsPatientsDestroy'] as const;
-
-export const getPatientsPatientsDestroyMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsDestroy>>, TError,PatientsPatientsDestroyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsDestroy>>, TError,PatientsPatientsDestroyMutationVariables, TContext> => {
-
-const mutationKey = getPatientsPatientsDestroyMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patientsPatientsDestroy>>, PatientsPatientsDestroyMutationVariables> = (props) => {
-          const {id} = props ?? {};
-
-          return  patientsPatientsDestroy(id,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PatientsPatientsDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof patientsPatientsDestroy>>>
-
-    export type PatientsPatientsDestroyMutationError = unknown
-    export type PatientsPatientsDestroyMutationVariables = {id: string}
-
-    export const usePatientsPatientsDestroy = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patientsPatientsDestroy>>, TError,PatientsPatientsDestroyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof patientsPatientsDestroy>>,
-        TError,
-        PatientsPatientsDestroyMutationVariables,
-        TContext
-      > => {
-      return useMutation(getPatientsPatientsDestroyMutationOptions(options), queryClient);
+      return useMutation(getPatientsPatientsMePreferredPaymentPartialUpdateMutationOptions(options), queryClient);
     }
