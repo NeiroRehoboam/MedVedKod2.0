@@ -9,6 +9,7 @@ from rest_framework.test import APIClient
 
 from ai_assis import services as ai_services
 from ai_assis.models import BaseQuestion, Session, SessionQuestion
+from dictionaries.models import PaymentType
 from patients.models import Patient
 from routing.models import RoutingResult
 
@@ -28,6 +29,21 @@ class AiSessionApiTests(TestCase):
         response = self.client.post(reverse("start-session"))
         self.assertEqual(response.status_code, 201)
         return response.data
+
+    @patch("ai_assis.views.generate_next_questions", return_value=[f"Вопрос {i}?" for i in range(1, 7)])
+    def test_session_response_includes_preferred_payment(self, _generate):
+        payment = PaymentType.objects.create(name="Тестовая оплата")
+        self.patient.preferred_payment = payment
+        self.patient.save(update_fields=["preferred_payment"])
+
+        data = self._start()
+        self.assertEqual(data["preferred_payment"]["id"], payment.id)
+        self.assertEqual(data["preferred_payment"]["name"], "Тестовая оплата")
+
+        response = self.client.get(
+            reverse("sessions-detail", args=[data["session"]["id"]])
+        )
+        self.assertEqual(response.data["preferred_payment"]["id"], payment.id)
 
     @patch("ai_assis.views.generate_next_questions", return_value=[f"Вопрос {i}?" for i in range(1, 7)])
     def test_start_retrieve_and_initial_question(self, _generate):

@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from patients.models import Patient
 from routing.models import RoutingResult
 from dictionaries.models import Specialty
+from dictionaries.serializers import PaymentTypeSerializer
 
 from .models import BaseQuestion, BaseQuestionOption, Session, SessionQuestion
 from .serializers import (
@@ -74,12 +75,15 @@ def _session_response(
     response_status: int = status.HTTP_200_OK,
 ) -> Response:
     """Единая форма ответа для всех эндпоинтов AI-сессий."""
+    patient = getattr(session, 'patient', None)
+    preferred = getattr(patient, 'preferred_payment', None) if patient is not None else None
     data = {
         'status': status_value,
         'session': SessionDetailSerializer(session).data,
         'questions': SessionQuestionSerializer(_ordered_questions(session), many=True).data,
         'ai_questions': SessionQuestionSerializer(_ai_questions(session), many=True).data,
         'safety': safety,
+        'preferred_payment': PaymentTypeSerializer(preferred).data if preferred else None,
     }
     if next_question is not None:
         data['next_question'] = SessionQuestionSerializer(next_question).data

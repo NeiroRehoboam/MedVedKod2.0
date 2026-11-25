@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from dictionaries.serializers import PaymentTypeSerializer
 from .models import Session, SessionQuestion, BaseQuestion, BaseQuestionOption
 
 
@@ -79,6 +80,7 @@ class AiSessionResponseSerializer(serializers.Serializer):
     ai_questions = SessionQuestionSerializer(many=True)
     next_question = SessionQuestionSerializer(allow_null=True, required=False)
     safety = SafetyStatusSerializer()
+    preferred_payment = PaymentTypeSerializer(allow_null=True, required=False)
     recommendation = serializers.DictField(required=False)
     routing = RoutingSummarySerializer(required=False)
     message = serializers.CharField(required=False)

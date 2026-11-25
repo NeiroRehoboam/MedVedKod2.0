@@ -4,6 +4,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from consultations.crypto_module import DecryptionError
+from dictionaries.models import PaymentType
 
 from .models import Patient
 
@@ -67,3 +68,87 @@ class PatientViewSetTests(TestCase):
         self.foreign.diagnosis_encrypted = ciphertext
         with self.assertRaises(DecryptionError):
             self.foreign.diagnosis
+
+
+class PreferredPaymentViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(max_id='payer', password=None)
+        self.payment = PaymentType.objects.create(name='Тестовое ДМС')
+        self.inactive = PaymentType.objects.create(name='Тестовый ОМС', active=False)
+        self.client = APIClient()
+
+    def test_anonymous_cannot_change_preferred_payment(self):
+        response = self.client.patch(
+            reverse('preferred-payment-update'),
+            {'preferred_payment': self.payment.id},
+            format='json',
+        )
+        self.assertIn(response.status_code, (401, 403))
+
+    def test_owner_can_set_and_read_preferred_payment(self):
+        patient = Patient.objects.create(user=self.user)
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.patch(
+            reverse('preferred-payment-update'),
+            {'preferred_payment': self.payment.id},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        patient.refresh_from_db()
+        self.assertEqual(patient.preferred_payment_id, self.payment.id)
+        self.assertEqual(response.data['preferred_payment_detail']['name'], 'Тестовое ДМС')
+
+    def test_owner_can_clear_preferred_payment(self):
+        patient = Patient.objects.create(user=self.user, preferred_payment=self.payment)
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.patch(
+            reverse('preferred-payment-update'),
+            {'preferred_payment': None},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        patient.refresh_from_db()
+        self.assertIsNone(patient.preferred_payment_id)
+
+    def test_inactive_payment_type_is_rejected(self):
+        Patient.objects.create(user=self.user)
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.patch(
+            reverse('preferred-payment-update'),
+            {'preferred_payment': self.inactive.id},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('preferred_payment', response.data)
+
+    def test_user_without_patient_card_gets_404(self):
+        user = User.objects.create_user(max_id='no-card', password=None)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(
+            reverse('preferred-payment-update'),
+            {'preferred_payment': self.payment.id},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_other_patient_fields_are_not_writable_here(self):
+        patient = Patient.objects.create(user=self.user, first_name='Иван')
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.patch(
+            reverse('preferred-payment-update'),
+            {
+                'preferred_payment': self.payment.id,
+                'first_name': 'Подмена',
+                'diagnosis': 'Подмена',
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        patient.refresh_from_db()
+        self.assertEqual(patient.first_name, 'Иван')
+        self.assertFalse(patient.diagnosis)
