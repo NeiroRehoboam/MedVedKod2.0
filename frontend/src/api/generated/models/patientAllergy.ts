@@ -10,6 +10,5 @@ export interface PatientAllergy {
   readonly id: number;
   /** @nullable */
   allergen?: number | null;
-  /** @maxLength 200 */
   custom_name?: string;
 }

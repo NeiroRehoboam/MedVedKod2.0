@@ -10,6 +10,5 @@ export interface HereditaryDiseasePatient {
   readonly id: number;
   /** @nullable */
   disease?: number | null;
-  /** @maxLength 200 */
   custom_name?: string;
 }

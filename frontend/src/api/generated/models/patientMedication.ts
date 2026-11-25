@@ -11,7 +11,6 @@ export interface PatientMedication {
   readonly id: number;
   /** @nullable */
   medication?: number | null;
-  /** @maxLength 200 */
   custom_name?: string;
   intake_mode?: IntakeModeEnum;
 }

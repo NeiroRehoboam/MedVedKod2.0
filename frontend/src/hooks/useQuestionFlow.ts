@@ -1,5 +1,4 @@
-﻿import { useCallback, useRef, useState } from "react"
-import type { PaymentType } from "@/data/payment.mock"
+import { useCallback, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import type { AiSessionResponse } from "@/api/generated/models"
 import {
@@ -28,7 +27,7 @@ export function useQuestionFlow(
   const [step, setStep] = useState<QuestionStepType>("payment")
   const [index, setIndex] = useState(0)
   const [drafts, setDrafts] = useState<Record<number, string>>({})
-  const [payment, setPayment] = useState<PaymentType | null>(null)
+  const [payment, setPayment] = useState<number | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [emergencyOpen, setEmergencyOpen] = useState(false)
   const [emergencyPending, setEmergencyPending] = useState(false)

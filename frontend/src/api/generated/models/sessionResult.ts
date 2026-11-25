@@ -5,6 +5,7 @@
  * API для медицинского сервиса (пациенты, анамнез, ИИ-ассистент)
  * OpenAPI spec version: 1.0.0
  */
+import type { PaymentType } from './paymentType';
 import type { RoutingSummary } from './routingSummary';
 import type { SafetyStatus } from './safetyStatus';
 import type { SessionDetail } from './sessionDetail';
@@ -21,6 +22,7 @@ export interface SessionResult {
   ai_questions: SessionQuestion[];
   next_question?: SessionQuestion | null;
   safety: SafetyStatus;
+  preferred_payment?: PaymentType | null;
   recommendation?: SessionResultRecommendation;
   routing?: RoutingSummary;
   message?: string;

@@ -28,6 +28,7 @@ export * from './medicationReference';
 export * from './nullEnum';
 export * from './patchedPatient';
 export * from './patchedPatientRequest';
+export * from './patchedPreferredPaymentUpdateRequest';
 export * from './patchedRoutingResult';
 export * from './patchedUpdateAnswerRequestRequest';
 export * from './patient';
