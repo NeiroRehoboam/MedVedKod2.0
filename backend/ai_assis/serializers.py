@@ -2,6 +2,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from dictionaries.serializers import PaymentTypeSerializer
 from .models import Session, SessionQuestion, BaseQuestion, BaseQuestionOption
+from .services import AI_OPTION_ID_OFFSET
 
 
 class BaseQuestionOptionSerializer(serializers.ModelSerializer):
@@ -22,13 +23,26 @@ class SessionQuestionSerializer(serializers.ModelSerializer):
             'source', 'allow_custom_answer', 'options',
         ]
 
+    @staticmethod
+    def _positive_option_ids(options):
+        """Старые AI-опции хранились с отрицательными id — отдаём их положительными."""
+        result = []
+        for option in options or []:
+            item = dict(option)
+            option_id = item.get('id')
+            if isinstance(option_id, int) and option_id < 0:
+                item['id'] = AI_OPTION_ID_OFFSET + abs(option_id)
+            result.append(item)
+        return result
+
     @extend_schema_field(BaseQuestionOptionSerializer(many=True))
     def get_options(self, obj):
         # снимок опций, сделанный при старте сессии; fallback — для старых записей
         if obj.options:
-            return obj.options
+            return self._positive_option_ids(obj.options)
         base_q = BaseQuestion.objects.filter(text=obj.question_text).first()
-        return BaseQuestionOptionSerializer(base_q.options.all(), many=True).data if base_q else []
+        options = BaseQuestionOptionSerializer(base_q.options.all(), many=True).data if base_q else []
+        return self._positive_option_ids(options)
 
 
 class SessionListSerializer(serializers.ModelSerializer):

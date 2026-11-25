@@ -24,6 +24,7 @@ from .serializers import (
     UpdateAnswerRequestSerializer,
 )
 from .services import (
+    AI_OPTION_ID_OFFSET,
     check_message_safety,
     choose_worst_safety,
     generate_next_questions,
@@ -333,7 +334,9 @@ class SendMessageView(APIView):
                 order_number = max_order + index
                 options = [
                     {
-                        'id': -(order_number * 100 + option_index),
+                        # AI-опций нет в БД, поэтому им нужен стабильный положительный id,
+                        # который не пересекается с реальными id BaseQuestionOption.
+                        'id': AI_OPTION_ID_OFFSET + order_number * 100 + option_index,
                         'text': option_text,
                         'order': option_index,
                     }

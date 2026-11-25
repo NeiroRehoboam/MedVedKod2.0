@@ -33,6 +33,10 @@ EMERGENCY_ACTION = (
 AI_QUESTION_MIN = 6
 AI_QUESTION_MAX = 10
 
+# AI-варианты не являются строками BaseQuestionOption, поэтому их id
+# берём с большим положительным сдвигом — так они не пересекутся с id из БД.
+AI_OPTION_ID_OFFSET = 1_000_000_000
+
 
 def ai_question_count() -> int:
     """Размер пачки настраивается, ограничение — 6–10 вопросов."""

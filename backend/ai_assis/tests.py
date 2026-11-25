@@ -159,6 +159,7 @@ class AiSessionApiTests(TestCase):
             [(option["text"], option["order"]) for option in ai_question["options"]],
             [("Да", 1), ("Нет", 2)],
         )
+        self.assertGreater(ai_question["options"][0]["id"], 0)
         self.assertNotEqual(
             ai_question["options"][0]["id"],
             ai_question["options"][1]["id"],
@@ -171,6 +172,20 @@ class AiSessionApiTests(TestCase):
 
         stored = SessionQuestion.objects.get(id=ai_question["id"])
         self.assertEqual([option["text"] for option in stored.options], ["Да", "Нет"])
+
+    def test_old_negative_ai_option_ids_are_returned_positive(self):
+        session = Session.objects.create(patient=self.patient)
+        question = SessionQuestion.objects.create(
+            session=session,
+            question_text="Старый AI-вопрос",
+            order_number=3,
+            source=SessionQuestion.Source.AI,
+            options=[{"id": -301, "text": "Да", "order": 1}],
+        )
+
+        options = SessionQuestionSerializer(question).data["options"]
+        self.assertEqual(options[0]["id"], ai_services.AI_OPTION_ID_OFFSET + 301)
+        self.assertEqual(SessionQuestion.objects.get(id=question.id).options[0]["id"], -301)
 
     @patch("ai_assis.views.generate_next_questions", return_value=[f"Вопрос {i}?" for i in range(1, 7)])
     def test_message_saves_answer_and_returns_six_ai_questions(self, mock_generate):
