@@ -227,14 +227,23 @@ class StartSessionView(APIView):
             for index, option in enumerate(DEFAULT_BASE_OPTIONS, start=1):
                 BaseQuestionOption.objects.create(question=base, text=option, order=index)
 
-        questions = BaseQuestion.objects.filter(is_active=True).order_by('order')
+        questions = (
+            BaseQuestion.objects.filter(is_active=True)
+            .prefetch_related('options')
+            .order_by('order')
+        )
         for q in questions:
+            options = [
+                {'id': option.id, 'text': option.text, 'order': option.order}
+                for option in sorted(q.options.all(), key=lambda item: (item.order, item.id))
+            ]
             SessionQuestion.objects.create(
                 session=session,
                 question_text=q.text,
                 order_number=q.order,
                 source=SessionQuestion.Source.SYSTEM,
                 allow_custom_answer=not q.is_multiple_choice,
+                options=options,
             )
 
         return _session_response(

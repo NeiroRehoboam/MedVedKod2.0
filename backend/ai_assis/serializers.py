@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from dictionaries.serializers import PaymentTypeSerializer
 from .models import Session, SessionQuestion, BaseQuestion, BaseQuestionOption
@@ -21,8 +22,12 @@ class SessionQuestionSerializer(serializers.ModelSerializer):
             'source', 'allow_custom_answer', 'options',
         ]
 
+    @extend_schema_field(BaseQuestionOptionSerializer(many=True))
     def get_options(self, obj):
-        base_q = BaseQuestion.objects.filter(text=obj.question_text, is_active=True).first()
+        # снимок опций, сделанный при старте сессии; fallback — для старых записей
+        if obj.options:
+            return obj.options
+        base_q = BaseQuestion.objects.filter(text=obj.question_text).first()
         return BaseQuestionOptionSerializer(base_q.options.all(), many=True).data if base_q else []
 
 
