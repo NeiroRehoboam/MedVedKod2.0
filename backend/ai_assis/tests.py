@@ -9,7 +9,18 @@ from rest_framework.test import APIClient
 
 from ai_assis import services as ai_services
 from ai_assis.models import BaseQuestion, Session, SessionQuestion
-from dictionaries.models import PaymentType
+from anamnesis.models import (
+    Anamnesis,
+    PatientAllergy,
+    PatientChronicDisease,
+    PatientMedication,
+)
+from dictionaries.models import (
+    AllergyReference,
+    ChronicDisease,
+    MedicationReference,
+    PaymentType,
+)
 from patients.models import Patient
 from routing.models import RoutingResult
 
@@ -399,6 +410,62 @@ class DeidentificationIntegrationTests(TestCase):
         self.assertTrue(
             SessionQuestion.objects.get(id=self.question.id).answer_text.startswith("Я Анна")
         )
+
+    def test_build_answers_includes_deidentified_anamnesis_context(self):
+        anamnesis = Anamnesis.objects.create(
+            patient=self.patient,
+            smoking_status=Anamnesis.SmokingStatus.CURRENT,
+            alcohol_status=Anamnesis.AlcoholStatus.NEVER,
+            recent_events_notes="Анна Иванова per 12.05.1990Operations",
+        )
+        medication = MedicationReference.objects.create(name="Аспирин")
+        allergy = AllergyReference.objects.create(name="Пенициллин")
+        disease = ChronicDisease.objects.create(name="Астма")
+        PatientMedication.objects.create(
+            anamnesis=anamnesis, medication=medication,
+            intake_mode=PatientMedication.IntakeMode.CONSTANT,
+        )
+        PatientAllergy.objects.create(anamnesis=anamnesis, allergen=allergy)
+        PatientChronicDisease.objects.create(anamnesis=anamnesis, disease=disease)
+
+        with_default = ai_services.build_answers(self.session)
+        with_context = ai_services.build_answers(
+            self.session, include_anamnesis=True
+        )
+
+        self.assertEqual(len(with_default), 1)
+        self.assertEqual(len(with_context), 2)
+        self.assertEqual(with_context[0]["question"], "Анамнез пациента (фон)")
+        context = with_context[0]["answer"]
+        self.assertIn("курение: сейчас", context)
+        self.assertIn("алкоголь: никогда", context)
+        self.assertIn("Аспирин", context)
+        self.assertIn("Пенициллин", context)
+        self.assertIn("Астма", context)
+        self.assertNotIn("Анна", context)
+        self.assertNotIn("Иванова", context)
+        self.assertNotIn("12.05.1990", context)
+
+        safety = ai_services.get_session_safety(self.session)
+        self.assertEqual(safety["danger_status"], "no_critical_signs_detected")
+
+    @patch("ai_assis.services.build_answers", return_value=[])
+    def test_rag_callers_request_anamnesis_context(self, mock_build):
+        safety = ai_services._safety(
+            danger_status="no_critical_signs_detected",
+            urgency="undetermined",
+            reason="Без критических признаков.",
+            recommended_action="Продолжайте опрос.",
+        )
+
+        with patch("rag_module.process_patient_answers", return_value={}):
+            ai_services.generate_recommendation(self.session, safety)
+        self.assertTrue(mock_build.call_args.kwargs.get("include_anamnesis"))
+
+        mock_build.reset_mock()
+        with patch("rag_module.config.GIGACHAT_CREDENTIALS", None):
+            ai_services.generate_next_questions(self.session, count=1)
+        self.assertTrue(mock_build.call_args.kwargs.get("include_anamnesis"))
 
     @patch("rag_module.config.GIGACHAT_CREDENTIALS", "test-credential")
     def test_safety_check_receives_deidentified_message(self):
