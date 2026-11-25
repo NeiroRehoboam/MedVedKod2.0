@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { Button } from "@maxhub/max-ui"
+import { Button, Radio } from "@maxhub/max-ui"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 
 import { paymentOptions, type PaymentType } from "@/data/payment.mock"
@@ -41,13 +41,9 @@ export function QuestionPayment({
           const selected = value === option.id
 
           return (
-            <button
+            <label
               key={option.id}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              onClick={() => onChange(option.id)}
-              className={`flex w-full items-center justify-between gap-4 rounded-max-medium px-5 py-4 text-left transition-colors ${
+              className={`flex w-full cursor-pointer items-center justify-between gap-4 rounded-max-medium px-5 py-4 text-left transition-colors ${
                 selected
                   ? "bg-max-accent-neutral-fade-secondary"
                   : "bg-max-secondary"
@@ -63,18 +59,15 @@ export function QuestionPayment({
                 </span>
               </div>
 
-              <span
-                className={`flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                  selected
-                    ? "border-max-text-themed"
-                    : "border-max-text-tertiary/30"
-                }`}
-              >
-                {selected && (
-                  <span className="size-2.5 rounded-full bg-max-text-themed" />
-                )}
-              </span>
-            </button>
+              <div className="shrink-0">
+                <Radio
+                  name="payment"
+                  aria-label={option.label}
+                  checked={selected}
+                  onChange={() => onChange(option.id)}
+                />
+              </div>
+            </label>
           )
         })}
       </div>

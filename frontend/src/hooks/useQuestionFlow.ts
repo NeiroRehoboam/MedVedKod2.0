@@ -25,7 +25,7 @@ export function useQuestionFlow(
 ) {
   const [response, setResponse] = useState<AiSessionResponse>()
   const queryClient = useQueryClient()
-  const [step, setStep] = useState<QuestionStepType>("welcome")
+  const [step, setStep] = useState<QuestionStepType>("payment")
   const [index, setIndex] = useState(0)
   const [drafts, setDrafts] = useState<Record<number, string>>({})
   const [payment, setPayment] = useState<PaymentType | null>(null)
