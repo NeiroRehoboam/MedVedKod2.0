@@ -33,7 +33,7 @@ class SessionQuestion(models.Model):
         SYSTEM = 'SYSTEM', 'Система'
         AI = 'AI', 'ИИ'
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='questions')
-    question_text_encrypted = models.TextField()
+    question_text_encrypted = models.TextField(default="")
     answer_text_encrypted = models.TextField(blank=True, null=True)
     order_number = models.PositiveIntegerField()
     source = models.CharField(max_length=20, choices=Source.choices, default=Source.SYSTEM)

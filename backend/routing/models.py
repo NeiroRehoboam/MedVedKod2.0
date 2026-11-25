@@ -9,8 +9,8 @@ class RoutingResult(models.Model):
     session = models.OneToOneField(Session, on_delete=models.CASCADE, related_name='routing_result')
     urgency = models.CharField(max_length=20, choices=Urgency.choices)
     specialty = models.ForeignKey(Specialty, on_delete=models.PROTECT, null=True, blank=True)
-    justification_encrypted = models.TextField()
-    recommendations_encrypted = models.TextField()
+    justification_encrypted = models.TextField(default="")
+    recommendations_encrypted = models.TextField(default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     @property
