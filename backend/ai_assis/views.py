@@ -30,6 +30,7 @@ from .services import (
     generate_recommendation,
     get_session_safety,
     map_urgency,
+    normalize_generated_question,
     to_text,
 )
 
@@ -324,16 +325,31 @@ class SendMessageView(APIView):
         # сохранённые копии при каждом следующем ответе (без отдельного эндпоинта).
         if not _ai_questions(session):
             max_order = max([q.order_number for q in _ordered_questions(session)] or [0])
-            SessionQuestion.objects.bulk_create([
-                SessionQuestion(
-                    session=session,
-                    question_text=text,
-                    order_number=max_order + index,
-                    source=SessionQuestion.Source.AI,
-                    allow_custom_answer=True,
+            generated_questions = []
+            for index, item in enumerate(generate_next_questions(session), start=1):
+                question_text, option_texts = normalize_generated_question(item)
+                if not question_text:
+                    continue
+                order_number = max_order + index
+                options = [
+                    {
+                        'id': -(order_number * 100 + option_index),
+                        'text': option_text,
+                        'order': option_index,
+                    }
+                    for option_index, option_text in enumerate(option_texts, start=1)
+                ]
+                generated_questions.append(
+                    SessionQuestion(
+                        session=session,
+                        question_text=question_text,
+                        order_number=order_number,
+                        source=SessionQuestion.Source.AI,
+                        allow_custom_answer=True,
+                        options=options,
+                    )
                 )
-                for index, text in enumerate(generate_next_questions(session), start=1)
-            ])
+            SessionQuestion.objects.bulk_create(generated_questions)
 
         ai_questions = _ai_questions(session)
         next_question = next(

@@ -409,16 +409,49 @@ def get_session_safety(session, use_llm: bool = False) -> dict:
     return worst
 
 
-def generate_next_questions(session, count: int | None = None) -> list[str]:
-    """Сразу генерирует всю пачку AI-вопросов (по умолчанию 6–10).
+def normalize_generated_question(item) -> tuple[str, list[str]]:
+    """Приводит ответ генератора к паре «вопрос + варианты ответа».
 
+    Старые вызовы могли передавать просто строку вопроса — они продолжают
+    работать, но без вариантов ответа.
+    """
+    if isinstance(item, dict):
+        question = item.get("question")
+        raw_options = item.get("options") or []
+    else:
+        question, raw_options = item, []
+
+    if not isinstance(question, str) or not question.strip():
+        return "", []
+
+    options = []
+    seen = set()
+    if isinstance(raw_options, (list, tuple)):
+        for raw_option in raw_options:
+            if not isinstance(raw_option, str) or not raw_option.strip():
+                continue
+            option = raw_option.strip()
+            if option in seen:
+                continue
+            seen.add(option)
+            options.append(option)
+    return question.strip(), options[:5]
+
+
+def generate_next_questions(session, count: int | None = None) -> list[dict]:
+    """Генерирует пачку AI-вопросов вместе с вариантами ответа.
+
+    Возвращает список словарей ``{"question": str, "options": list[str]}``.
     Безопасность уже проверена вызывающим кодом, поэтому используется низкоуровневый
     генератор, а не полный RAG-триаж шесть раз. Любая неудачная или дублирующаяся
-    генерация заменяется встроенным вопросом, чтобы клиент всегда получил полный набор.
+    генерация заменяется встроенным вопросом без вариантов, чтобы клиент всегда
+    получил полный набор.
     """
     count = ai_question_count() if count is None else count
-    generated: list[str] = []
+    generated: list[dict] = []
+    seen_questions = set()
     answers = build_answers(session, include_anamnesis=True)
+    identifiers = patient_identifiers(getattr(session, "patient", None))
 
     try:
         from rag_module.config import GIGACHAT_CREDENTIALS
@@ -432,12 +465,15 @@ def generate_next_questions(session, count: int | None = None) -> list[str]:
 
         for _ in range(count):
             try:
-                result = rag_generate(answers)
-                question = result.get("question") if isinstance(result, dict) else None
-                if isinstance(question, str) and question.strip():
-                    question = deidentify(question.strip(), patient_identifiers(session.patient))
-                    if question not in generated:
-                        generated.append(question)
+                question, options = normalize_generated_question(rag_generate(answers))
+                if not question:
+                    continue
+                question = deidentify(question, identifiers)
+                options = [deidentify(option, identifiers) for option in options]
+                if question in seen_questions:
+                    continue
+                seen_questions.add(question)
+                generated.append({"question": question, "options": options})
             except Exception:
                 logger.warning("One RAG question could not be generated")
     except Exception:
@@ -446,15 +482,16 @@ def generate_next_questions(session, count: int | None = None) -> list[str]:
     for question in FALLBACK_QUESTIONS:
         if len(generated) >= count:
             break
-        if question not in generated:
-            generated.append(question)
+        if question not in seen_questions:
+            seen_questions.add(question)
+            generated.append({"question": question, "options": []})
 
     return generated[:count]
 
 
 def generate_next_question(session) -> str:
     """Обратно совместимый хелпер для одного вопроса."""
-    return generate_next_questions(session, count=1)[0]
+    return generate_next_questions(session, count=1)[0]["question"]
 
 
 URGENCY_MAP = {

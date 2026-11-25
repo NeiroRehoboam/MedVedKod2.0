@@ -134,6 +134,44 @@ class AiSessionApiTests(TestCase):
         self.assertTrue(all(q["options"] == [] for q in response.data["ai_questions"]))
         self.assertEqual(response.data["next_question"]["options"], [])
 
+    @patch(
+        "ai_assis.views.generate_next_questions",
+        return_value=[
+            {"question": "Вопрос с вариантами?", "options": ["Да", "Нет"]},
+            *[{"question": f"Вопрос {i}?", "options": []} for i in range(2, 7)],
+        ],
+    )
+    def test_ai_options_are_saved_and_returned(self, _generate):
+        data = self._start()
+        session_id = data["session"]["id"]
+        response = self.client.post(
+            reverse("send-message", args=[session_id]),
+            {"content": "Болит поясница", "question_id": data["questions"][0]["id"]},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        ai_question = next(
+            q for q in response.data["ai_questions"]
+            if q["question_text"] == "Вопрос с вариантами?"
+        )
+        self.assertEqual(
+            [(option["text"], option["order"]) for option in ai_question["options"]],
+            [("Да", 1), ("Нет", 2)],
+        )
+        self.assertNotEqual(
+            ai_question["options"][0]["id"],
+            ai_question["options"][1]["id"],
+        )
+
+        self.assertEqual(
+            [option["text"] for option in response.data["next_question"]["options"]],
+            ["Да", "Нет"],
+        )
+
+        stored = SessionQuestion.objects.get(id=ai_question["id"])
+        self.assertEqual([option["text"] for option in stored.options], ["Да", "Нет"])
+
     @patch("ai_assis.views.generate_next_questions", return_value=[f"Вопрос {i}?" for i in range(1, 7)])
     def test_message_saves_answer_and_returns_six_ai_questions(self, mock_generate):
         data = self._start()
@@ -572,8 +610,29 @@ class DeidentificationIntegrationTests(TestCase):
         ):
             questions = ai_services.generate_next_questions(self.session, count=1)
 
-        self.assertNotIn("Анна", questions[0])
-        self.assertNotIn("12.05.1990", questions[0])
+        self.assertNotIn("Анна", questions[0]["question"])
+        self.assertNotIn("12.05.1990", questions[0]["question"])
+
+    @patch("rag_module.config.GIGACHAT_CREDENTIALS", "test-credential")
+    def test_generated_options_are_kept_and_deidentified(self):
+        mock_generate = MagicMock(
+            return_value={
+                "question": "Каквариант для Анны?",
+                "options": ["Анна", "  Болит  ", "Анна", ""],
+            }
+        )
+        fake_module = SimpleNamespace(generate_next_question=mock_generate)
+
+        with patch.dict(
+            "sys.modules",
+            {"rag_module.generation.question_generator": fake_module},
+        ):
+            questions = ai_services.generate_next_questions(self.session, count=1)
+
+        self.assertEqual(
+            questions[0]["options"],
+            ["[ИМЯ]", "Болит"],
+        )
 
     def test_answer_is_encrypted_at_rest(self):
         raw = SessionQuestion.objects.values_list(
