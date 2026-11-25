@@ -8,7 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { type PaymentType } from "@/data/payment.mock"
+
 import { Button } from "@maxhub/max-ui"
 import { DoctorSignature, PageDescription, PageTitle } from "../../typography"
 
@@ -16,7 +16,7 @@ type Urgency = "emergency" | "urgent" | "planned" | "self_care" | "undetermined"
 
 type QuestionFinishProps = {
   result?: AiSessionResponse | SessionResult
-  payment?: PaymentType
+  payment?: number
   onRestart: () => void
   onViewAnswers?: () => void
 }

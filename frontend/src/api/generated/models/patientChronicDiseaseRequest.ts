@@ -9,6 +9,5 @@
 export interface PatientChronicDiseaseRequest {
   /** @nullable */
   disease?: number | null;
-  /** @maxLength 200 */
   custom_name?: string;
 }

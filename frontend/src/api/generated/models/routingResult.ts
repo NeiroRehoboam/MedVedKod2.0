@@ -10,7 +10,7 @@ import type { UrgencyEnum } from './urgencyEnum';
 
 export interface RoutingResult {
   readonly id: number;
-  session: number;
+  readonly session: number;
   urgency: UrgencyEnum;
   /** @nullable */
   specialty?: number | null;
