@@ -13,12 +13,16 @@ type QuestionExitSheetProps = {
   open: boolean
   onClose: () => void
   onExit: () => void
+  onDelete?: () => void
+  deleteDisabled?: boolean
 }
 
 export function QuestionExitSheet({
   open,
   onClose,
   onExit,
+  onDelete,
+  deleteDisabled,
 }: QuestionExitSheetProps) {
   return (
     <AlertDialog open={open} onOpenChange={(nextOpen) => {
@@ -56,6 +60,21 @@ export function QuestionExitSheet({
           >
             Продолжить диалог
           </Button>
+          {onDelete && (
+            <Button
+              type="button"
+              size="medium"
+              variant="secondary"
+              stretched
+              disabled={deleteDisabled}
+              onClick={() => {
+                onClose()
+                onDelete()
+              }}
+            >
+              Удалить обращение
+            </Button>
+          )}
         </div>
       </AlertDialogContent>
     </AlertDialog>

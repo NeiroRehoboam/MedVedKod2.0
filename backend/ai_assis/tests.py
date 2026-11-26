@@ -43,6 +43,84 @@ class AiSessionApiTests(TestCase):
         self.assertEqual(response.status_code, 201)
         return response.data
 
+    def test_delete_session_in_any_status_cascades_related_data(self):
+        retained_session = Session.objects.create(patient=self.patient)
+        retained_question = SessionQuestion.objects.create(
+            session=retained_session, question_text="Retained", order_number=1,
+        )
+        retained_routing = RoutingResult.objects.create(
+            session=retained_session, urgency=RoutingResult.Urgency.PLANNED,
+        )
+        for session_status in Session.Status.values:
+            with self.subTest(status=session_status):
+                session = Session.objects.create(
+                    patient=self.patient, status=session_status,
+                )
+                for order, source in enumerate(SessionQuestion.Source.values, start=1):
+                    SessionQuestion.objects.create(
+                        session=session, question_text="Question", answer_text="Answer",
+                        order_number=order, source=source,
+                        options=[{"id": 1, "text": "Option", "order": 1}],
+                    )
+                RoutingResult.objects.create(
+                    session=session, urgency=RoutingResult.Urgency.PLANNED,
+                    justification="Reason", recommendations="Recommendation",
+                )
+                session_id = session.id
+
+                response = self.client.delete(reverse("sessions-detail", args=[session_id]))
+
+                self.assertEqual(response.status_code, 204)
+                self.assertEqual(response.content, b"")
+                self.assertFalse(Session.objects.filter(id=session_id).exists())
+                self.assertFalse(SessionQuestion.objects.filter(session_id=session_id).exists())
+                self.assertFalse(RoutingResult.objects.filter(session_id=session_id).exists())
+                self.assertTrue(Session.objects.filter(id=retained_session.id).exists())
+                self.assertTrue(SessionQuestion.objects.filter(id=retained_question.id).exists())
+                self.assertTrue(RoutingResult.objects.filter(id=retained_routing.id).exists())
+                self.assertTrue(Patient.objects.filter(id=self.patient.id).exists())
+
+    def test_delete_session_without_related_data(self):
+        session = Session.objects.create(patient=self.patient)
+        url = reverse("sessions-detail", args=[session.id])
+
+        self.assertEqual(self.client.delete(url).status_code, 204)
+        self.assertEqual(self.client.delete(url).status_code, 404)
+
+    def test_delete_other_users_session_returns_404(self):
+        other_user = User.objects.create_user(max_id="other-delete-user", password=None)
+        other_patient = Patient.objects.create(user=other_user)
+        session = Session.objects.create(patient=other_patient)
+        question = SessionQuestion.objects.create(
+            session=session, question_text="Question", order_number=1,
+        )
+        routing = RoutingResult.objects.create(
+            session=session, urgency=RoutingResult.Urgency.PLANNED,
+        )
+
+        response = self.client.delete(reverse("sessions-detail", args=[session.id]))
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Session.objects.filter(id=session.id).exists())
+        self.assertTrue(SessionQuestion.objects.filter(id=question.id).exists())
+        self.assertTrue(RoutingResult.objects.filter(id=routing.id).exists())
+
+    def test_anonymous_cannot_delete_session(self):
+        session = Session.objects.create(patient=self.patient)
+
+        response = APIClient().delete(reverse("sessions-detail", args=[session.id]))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(Session.objects.filter(id=session.id).exists())
+
+    def test_openapi_describes_session_deletion_without_response_body(self):
+        schema = SchemaGenerator().get_schema(request=None, public=True)
+        operation = schema["paths"]["/api/ai/sessions/{id}/"]["delete"]
+
+        self.assertEqual(operation["tags"], ["AI Sessions"])
+        self.assertIn("204", operation["responses"])
+        self.assertNotIn("content", operation["responses"]["204"])
+
     @patch("ai_assis.views.generate_next_questions", return_value=[f"Вопрос {i}?" for i in range(1, 7)])
     def test_options_are_snapshotted_at_start_and_survive_base_changes(self, _generate):
         base = BaseQuestion.objects.get(text="Что вас беспокоит?")

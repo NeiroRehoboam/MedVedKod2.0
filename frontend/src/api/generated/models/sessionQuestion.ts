@@ -5,6 +5,7 @@
  * API для медицинского сервиса (пациенты, анамнез, ИИ-ассистент)
  * OpenAPI spec version: 1.0.0
  */
+import type { BaseQuestionOption } from './baseQuestionOption';
 import type { SourceEnum } from './sourceEnum';
 
 export interface SessionQuestion {
@@ -19,5 +20,5 @@ export interface SessionQuestion {
   answer_text?: string | null;
   source?: SourceEnum;
   allow_custom_answer?: boolean;
-  readonly options: string;
+  readonly options: readonly BaseQuestionOption[];
 }

@@ -19,6 +19,7 @@ type QuestionFinishProps = {
   payment?: number
   onRestart: () => void
   onViewAnswers?: () => void
+  onDelete?: () => void
 }
 
 const urgencyConfig = {
@@ -66,6 +67,7 @@ export function QuestionFinish({
   result: response,
   onRestart,
   onViewAnswers,
+  onDelete,
 }: QuestionFinishProps) {
   const recommendation = response?.recommendation
   const isFallback = recommendation?.source === "fallback"
@@ -290,6 +292,18 @@ export function QuestionFinish({
           </Button>
         )}
       </div>
+      {onDelete && (
+        <Button
+          type="button"
+          size="large"
+          variant="secondary"
+          stretched
+          className="mt-2"
+          onClick={onDelete}
+        >
+          Удалить обращение
+        </Button>
+      )}
     </section>
   )
 }

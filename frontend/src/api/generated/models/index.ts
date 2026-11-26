@@ -11,6 +11,7 @@ export * from './aiSessionResponseRecommendation';
 export * from './alcoholStatusEnum';
 export * from './allergyReference';
 export * from './allergyType';
+export * from './baseQuestionOption';
 export * from './blankEnum';
 export * from './chronicDisease';
 export * from './complaintCategory';

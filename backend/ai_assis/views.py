@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -175,7 +175,7 @@ def _stop_session(session, safety: dict) -> Response:
 
 
 @extend_schema(tags=['AI Sessions'])
-class SessionViewSet(viewsets.ReadOnlyModelViewSet):
+class SessionViewSet(mixins.DestroyModelMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -183,6 +183,18 @@ class SessionViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_serializer_class(self):
         return SessionListSerializer if self.action == 'list' else SessionDetailSerializer
+
+    @extend_schema(
+        summary='Удалить сессию',
+        description=(
+            'Удаляет собственную сессию независимо от её статуса '
+            'вместе со связанными вопросами, ответами и результатом маршрутизации. '
+            'Для чужой или несуществующей сессии возвращается 404.'
+        ),
+        responses={204: None},
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
     @extend_schema(responses={200: SessionResultSerializer})
     def retrieve(self, request, *args, **kwargs):
