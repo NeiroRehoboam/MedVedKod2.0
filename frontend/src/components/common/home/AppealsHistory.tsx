@@ -23,6 +23,7 @@ export function AppealsHistory({
     id: String(session.id),
 
     title: session.title || "Новое обращение",
+    summary: session.summary?.trim() || undefined,
 
     date: session.created_at
       ? new Intl.DateTimeFormat("ru-RU", {
