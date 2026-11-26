@@ -6,6 +6,9 @@ import {
   aiSessionsStartCreate,
   getAiSessionsListQueryKey,
   getAiSessionsRetrieveQueryKey,
+  getAiSessionsInitialQuestionRetrieveQueryKey,
+  getAiSessionsResultRetrieveQueryKey,
+  useAiSessionsDestroy,
   useAiSessionsInitialQuestionRetrieve,
   useAiSessionsResultRetrieve,
 } from "@/api/generated/ai-sessions/ai-sessions"
@@ -47,6 +50,27 @@ export function useAiSession(id?: string) {
     gcTime: 0,
     retry: 1,
     staleTime: 60_000,
+  })
+}
+
+export function useDeleteAiSession() {
+  const queryClient = useQueryClient()
+
+  return useAiSessionsDestroy({
+    mutation: {
+      onSuccess: (_response, { id }) => {
+        void queryClient.invalidateQueries({
+          queryKey: getAiSessionsListQueryKey(),
+        })
+        for (const queryKey of [
+          getAiSessionsRetrieveQueryKey(id),
+          getAiSessionsInitialQuestionRetrieveQueryKey(Number(id)),
+          getAiSessionsResultRetrieveQueryKey(Number(id)),
+        ]) {
+          queryClient.removeQueries({ queryKey, exact: true })
+        }
+      },
+    },
   })
 }
 

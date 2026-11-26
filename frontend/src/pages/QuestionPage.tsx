@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Button, Spinner } from "@maxhub/max-ui"
 
@@ -17,7 +17,9 @@ import {
   useAiSessionResult,
   useStartAiSession,
   useInitialQuestion,
+  useDeleteAiSession,
 } from "@/hooks/useAiSessions"
+import { QuestionDeleteDialog } from "@/components/common/question/QuestionDeleteDialog"
 
 import type { AiSessionResponse } from "@/api/generated/models"
 import { ArrowUpRight } from "lucide-react"
@@ -27,6 +29,8 @@ export function QuestionPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
 
   const startSession = useStartAiSession()
+  const deleteSession = useDeleteAiSession()
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const sessionQuery = useAiSession(sessionId)
   const isCompleted = sessionQuery.data?.session.status === "COMPLETED"
   const resultQuery = useAiSessionResult(sessionId, isCompleted)
@@ -67,6 +71,24 @@ export function QuestionPage() {
   const handleExit = () => {
     flow.resetFlow()
     goHome()
+  }
+
+  const openDeleteDialog = () => {
+    deleteSession.reset()
+    setDeleteOpen(true)
+  }
+
+  const handleDelete = () => {
+    if (!sessionId || deleteSession.isPending || flow.isPending) return
+
+    deleteSession.mutate(
+      { id: sessionId },
+      {
+        onSuccess: () => {
+          navigate("/home", { replace: true })
+        },
+      }
+    )
   }
 
   const handleRestart = () => {
@@ -218,6 +240,7 @@ export function QuestionPage() {
             result={isCompleted ? resultQuery.data?.data : flow.response}
             payment={flow.payment ?? undefined}
             onRestart={handleRestart}
+            onDelete={sessionId ? openDeleteDialog : undefined}
             onViewAnswers={
               isCompleted && flow.questions.length > 0
                 ? () => flow.setStep("questions")
@@ -257,6 +280,8 @@ export function QuestionPage() {
       {step !== "welcome" && step !== "finished" && (
         <QuestionHeader
           onExit={handleExit}
+          onDelete={sessionId ? openDeleteDialog : undefined}
+          deleteDisabled={flow.isPending}
           questionIndex={flow.step === "questions" ? flow.index : undefined}
           totalQuestions={
             flow.step === "questions" ? flow.questions.length : undefined
@@ -265,6 +290,13 @@ export function QuestionPage() {
       )}
 
       <div className="flex min-h-0 flex-1 flex-col">{renderStep()}</div>
+      <QuestionDeleteDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
+        isPending={deleteSession.isPending}
+        isError={deleteSession.isError}
+      />
     </main>
   )
 }

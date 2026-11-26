@@ -8,12 +8,16 @@ import { QuestionExitSheet } from "./QuestionExitDialog"
 
 type QuestionHeaderProps = {
   onExit: () => void
+  onDelete?: () => void
+  deleteDisabled?: boolean
   questionIndex?: number
   totalQuestions?: number
 }
 
 export function QuestionHeader({
   onExit,
+  onDelete,
+  deleteDisabled,
   questionIndex,
   totalQuestions,
 }: QuestionHeaderProps) {
@@ -70,6 +74,8 @@ export function QuestionHeader({
         open={exitOpen}
         onClose={() => setExitOpen(false)}
         onExit={onExit}
+        onDelete={onDelete}
+        deleteDisabled={deleteDisabled}
       />
     </>
   )

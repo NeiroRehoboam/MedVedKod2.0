@@ -285,7 +285,94 @@ export function useAiSessionsRetrieve<TData = Awaited<ReturnType<typeof aiSessio
 
 
 
-export type aiSessionsCompleteCreateResponse200 = {
+export type aiSessionsDestroyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type aiSessionsDestroyResponseSuccess = (aiSessionsDestroyResponse204) & {
+  headers: Headers;
+};
+;
+
+export type aiSessionsDestroyResponse = (aiSessionsDestroyResponseSuccess)
+
+export const getAiSessionsDestroyUrl = (id: string,) => {
+
+
+
+
+  return `/api/ai/sessions/${id}/`
+}
+
+/**
+ * Удаляет собственную сессию независимо от её статуса вместе со связанными вопросами, ответами и результатом маршрутизации. Для чужой или несуществующей сессии возвращается 404.
+ * @summary Удалить сессию
+ */
+export const aiSessionsDestroy = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<aiSessionsDestroyResponse> => {
+
+  return customFetch<aiSessionsDestroyResponse>(getAiSessionsDestroyUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getAiSessionsDestroyMutationKey = () => ['aiSessionsDestroy'] as const;
+
+export const getAiSessionsDestroyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof aiSessionsDestroy>>, TError,AiSessionsDestroyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof aiSessionsDestroy>>, TError,AiSessionsDestroyMutationVariables, TContext> => {
+
+const mutationKey = getAiSessionsDestroyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof aiSessionsDestroy>>, AiSessionsDestroyMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  aiSessionsDestroy(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AiSessionsDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof aiSessionsDestroy>>>
+
+    export type AiSessionsDestroyMutationError = unknown
+    export type AiSessionsDestroyMutationVariables = {id: string}
+
+    /**
+ * Удаляет собственную сессию независимо от её статуса вместе со связанными вопросами, ответами и результатом маршрутизации. Для чужой или несуществующей сессии возвращается 404.
+ * @summary Удалить сессию
+ */
+export const useAiSessionsDestroy = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof aiSessionsDestroy>>, TError,AiSessionsDestroyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof aiSessionsDestroy>>,
+        TError,
+        AiSessionsDestroyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAiSessionsDestroyMutationOptions(options), queryClient);
+    }
+    export type aiSessionsCompleteCreateResponse200 = {
   data: AiSessionResponse
   status: 200
 }
