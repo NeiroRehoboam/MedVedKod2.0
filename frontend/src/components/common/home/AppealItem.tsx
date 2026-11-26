@@ -1,9 +1,7 @@
 import { ArrowUpRight } from "lucide-react"
 import { CellSimple, IconButton, StatusBadge, Typography } from "@maxhub/max-ui"
 
-import { mockAppeals } from "@/data/appeals.mock"
-
-type Appeal = (typeof mockAppeals)[number]
+import type { Appeal } from "@/types/appeal.types"
 
 type AppealItemProps = {
   appeal: Appeal
@@ -25,7 +23,14 @@ export function AppealItem({ appeal, onClick }: AppealItemProps) {
             {isActive && <StatusBadge status="neutral" text="В процессе" />}
           </div>
         }
-        subtitle={appeal.date}
+        subtitle={
+          <div className="flex flex-col gap-1">
+            {appeal.summary && (
+              <span className="line-clamp-2 break-words">{appeal.summary}</span>
+            )}
+            <span>{appeal.date}</span>
+          </div>
+        }
         subtitleMode="secondary"
         surface="default"
         separator={false}
