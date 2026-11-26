@@ -29,9 +29,10 @@ export function AppealsHistory({
           day: "numeric",
           month: "long",
           year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
         }).format(new Date(session.created_at))
       : "Дата не указана",
-
     status: session.status === "COMPLETED" ? "completed" : "in_progress",
   }))
   return (
