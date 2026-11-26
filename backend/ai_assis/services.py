@@ -30,8 +30,8 @@ EMERGENCY_ACTION = (
 
 # Клиент сам пагинирует вопросы, поэтому API создаёт пачку один раз
 # и затем просто пересылает сохранённый список в каждом ответе.
-AI_QUESTION_MIN = 6
-AI_QUESTION_MAX = 10
+AI_QUESTION_MIN = 5
+AI_QUESTION_MAX = 5
 
 # AI-варианты не являются строками BaseQuestionOption, поэтому их id
 # берём с большим положительным сдвигом — так они не пересекутся с id из БД.
@@ -451,7 +451,7 @@ def generate_next_questions(session, count: int | None = None) -> list[dict]:
     генерация заменяется встроенным вопросом без вариантов, чтобы клиент всегда
     получил полный набор.
     """
-    count = ai_question_count() if count is None else count
+    count = ai_question_count() if count is None else min(5, max(1, int(count)))
     generated: list[dict] = []
     seen_questions = set()
     answers = build_answers(session, include_anamnesis=True)
