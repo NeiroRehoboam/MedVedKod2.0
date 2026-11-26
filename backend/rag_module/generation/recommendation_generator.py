@@ -110,7 +110,13 @@ SYSTEM_PROMPT = """
 
 18. place — место обращения, если его можно обоснованно определить.
 19. recommendation — безопасная предварительная информационная рекомендация.
-20. reason — объяснение на основании ответов пользователя и источников.
+20. reason — краткое объяснение для пациента: 1–2 коротких предложения
+    простыми словами. Свяжи конкретную жалобу с задачей выбранного специалиста:
+    что именно врач сможет оценить при обращении. Не перечисляй всю историю,
+    не ставь диагноз, не утверждай наличие болезни или отсутствие риска.
+    Если специальность не определена, честно скажи, что данных для её выбора
+    недостаточно; не выдумывай специалиста. При self_care не противоречь
+    рекомендации и не придумывай обязательное направление к врачу.
 21. evidence — только действительно относящиеся к утверждениям цитаты.
 
 ПРОВЕРКА ИСТОЧНИКОВ:
@@ -120,6 +126,11 @@ SYSTEM_PROMPT = """
 24. Не придумывай цитаты и не изменяй их смысл.
 25. неподтверждённые цитаты не попадут в результат, а рекомендация вернётся с пустым.
 26. Не используй нерелевантные источники только ради заполнения evidence.
+27. Номера источников, названия файлов и номера страниц нужны только внутри
+    evidence. Не вставляй «Источник 2, страница 8», «КР162_3» или «[1]»
+    в doctor, place, recommendation и reason. Пиши эти поля для пациента,
+    без технических ссылок. Цитаты и номера источников сохраняй в evidence.
+28. Цитируй дословно непрерывный текст: не сокращай цитаты многоточиями.
 
 Верни только JSON, соответствующий заданной схеме.
 """
@@ -134,6 +145,22 @@ def _normalize_text(text: str) -> str:
         text,
     )
     return " ".join(text.split())
+
+
+def clean_patient_text(text: str) -> str:
+    """Убирает технические ссылки из текста, не затрагивая evidence."""
+    reference = (
+        r"(?:источник(?:и|а|ов)?|sources?)\s*[:№]?\s*"
+        r"(?:\d+(?:\s*[,;]\s*\d+)*|КР\d+[\w.-]*)"
+        r"(?:\s*[,;:]?\s*(?:страниц[аеуы]?|стр\.?|pages?|p\.)\s*\d+(?:[–-]\d+)?)?"
+    )
+    text = re.sub(rf"[\[(]\s*{reference}\s*[\])]", "", text, flags=re.I)
+    text = re.sub(reference, "", text, flags=re.I)
+    text = re.sub(r"\[\s*\d+(?:\s*[,;–-]\s*\d+)*\s*\]", "", text)
+    text = re.sub(r"\(?\bКР\d+[_-]\d+(?:\.pdf)?(?:\s*,?\s*(?:стр\.?|страница)\s*\d+)?\)?", "", text, flags=re.I)
+    text = re.sub(r"\s+([,.;:!?])", r"\1", text)
+    text = re.sub(r"\(\s*\)|\[\s*\]", "", text)
+    return re.sub(r"[ \t]{2,}", " ", text).strip()
 
 
 def generate_recommendation(
@@ -309,10 +336,10 @@ def generate_recommendation(
         )
 
     return {
-        "doctor": payload.doctor,
+        "doctor": clean_patient_text(payload.doctor),
         "urgency": payload.urgency,
-        "place": payload.place,
-        "recommendation": payload.recommendation,
-        "reason": payload.reason,
+        "place": clean_patient_text(payload.place),
+        "recommendation": clean_patient_text(payload.recommendation),
+        "reason": clean_patient_text(payload.reason),
         "evidence": verified_evidence,
     }

@@ -90,9 +90,20 @@ def _session_response(
     if next_question is not None:
         data['next_question'] = SessionQuestionSerializer(next_question).data
     if recommendation is not None:
-        data['recommendation'] = recommendation
+        from rag_module.generation.recommendation_generator import clean_patient_text
+
+        visible_fields = {'doctor', 'place', 'recommendation', 'reason', 'justification'}
+        data['recommendation'] = {
+            key: clean_patient_text(value)
+            if key in visible_fields and isinstance(value, str) else value
+            for key, value in recommendation.items()
+        }
     if routing is not None:
         data['routing'] = RoutingSummarySerializer(routing).data
+        from rag_module.generation.recommendation_generator import clean_patient_text
+
+        for field in ('justification', 'recommendations'):
+            data['routing'][field] = clean_patient_text(data['routing'][field])
     if message is not None:
         data['message'] = message
     return Response(data, status=response_status)

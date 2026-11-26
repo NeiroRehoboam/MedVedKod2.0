@@ -30,6 +30,21 @@ User = get_user_model()
 
 
 class AiSessionApiTests(TestCase):
+    def test_saved_result_hides_references_without_changing_stored_data(self):
+        session = Session.objects.create(patient=self.patient, status=Session.Status.COMPLETED)
+        routing = RoutingResult.objects.create(
+            session=session, urgency=RoutingResult.Urgency.PLANNED,
+            justification="Врач оценит жалобы (Источник 2, страница 8).",
+            recommendations="Обратитесь к врачу [2].",
+        )
+        response = self.client.get(reverse("sessions-detail", args=[session.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["recommendation"]["justification"], "Врач оценит жалобы.")
+        self.assertEqual(response.data["routing"]["justification"], "Врач оценит жалобы.")
+        self.assertEqual(response.data["routing"]["recommendations"], "Обратитесь к врачу.")
+        routing.refresh_from_db()
+        self.assertIn("Источник 2", routing.justification)
+
     def setUp(self):
         self.user = User.objects.create_user(max_id="test-user", password=None)
         self.patient = Patient.objects.create(user=self.user)
@@ -693,9 +708,9 @@ class DeidentificationIntegrationTests(TestCase):
     @patch("rag_module.config.GIGACHAT_CREDENTIALS", "test-credential")
     def test_generated_question_is_deidentified(self):
         mock_generate = MagicMock(
-            return_value={"question": "Анна, у вас больно в 12.05.1990?"}
+            return_value=[{"question": "Анна, у вас больно в 12.05.1990?"}]
         )
-        fake_module = SimpleNamespace(generate_next_question=mock_generate)
+        fake_module = SimpleNamespace(generate_question_batch=mock_generate)
 
         with patch.dict(
             "sys.modules",
@@ -709,12 +724,12 @@ class DeidentificationIntegrationTests(TestCase):
     @patch("rag_module.config.GIGACHAT_CREDENTIALS", "test-credential")
     def test_generated_options_are_kept_and_deidentified(self):
         mock_generate = MagicMock(
-            return_value={
+            return_value=[{
                 "question": "Каквариант для Анны?",
                 "options": ["Анна", "  Болит  ", "Анна", ""],
-            }
+            }]
         )
-        fake_module = SimpleNamespace(generate_next_question=mock_generate)
+        fake_module = SimpleNamespace(generate_question_batch=mock_generate)
 
         with patch.dict(
             "sys.modules",

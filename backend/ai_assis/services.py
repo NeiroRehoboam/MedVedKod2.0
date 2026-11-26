@@ -65,6 +65,19 @@ FALLBACK_QUESTIONS = (
     "Были ли результаты обследований или анализов?",
 )
 
+FALLBACK_OPTIONS = (
+    ("Сегодня", "Вчера", "2–7 дней назад", "Больше недели назад", "Не помню"),
+    ("0 — не беспокоят", "1–3 — слабо", "4–6 — умеренно", "7–10 — сильно", "Не могу оценить"),
+    ("Отдых", "Изменение положения тела", "Принятые лекарства", "Ничего", "Не знаю"),
+    ("Есть хронические заболевания", "Принимаю лекарства", "И то и другое", "Нет", "Не знаю"),
+    ("Нет, впервые", "Было один раз", "Было несколько раз", "Не помню"),
+    ("На лекарства", "На продукты", "И на лекарства, и на продукты", "Нет", "Не знаю"),
+    ("Становится лучше", "Без изменений", "Становится хуже", "Не могу оценить"),
+    ("С приёмом пищи", "С физической нагрузкой", "И с пищей, и с нагрузкой", "Связи не замечаю", "Не знаю"),
+    ("Постоянно назначенные препараты", "Только средства от текущих симптомов", "И те и другие", "Не принимал(а)"),
+    ("Да, есть результаты", "Обследования были, результатов ещё нет", "Обследований не было", "Не помню"),
+)
+
 
 def _age_years(birth_date, today=None):
     if not birth_date:
@@ -447,7 +460,7 @@ def generate_next_questions(session, count: int | None = None) -> list[dict]:
 
     Возвращает список словарей ``{"question": str, "options": list[str]}``.
     Безопасность уже проверена вызывающим кодом, поэтому используется низкоуровневый
-    генератор, а не полный RAG-триаж шесть раз. Любая неудачная или дублирующаяся
+    генератор всего пакета, а не независимые вопросы по одной истории. Неудачная
     генерация заменяется встроенным вопросом без вариантов, чтобы клиент всегда
     получил полный набор.
     """
@@ -460,16 +473,16 @@ def generate_next_questions(session, count: int | None = None) -> list[dict]:
     try:
         from rag_module.config import GIGACHAT_CREDENTIALS
         from rag_module.generation.question_generator import (
-            generate_next_question as rag_generate,
+            generate_question_batch as rag_generate,
         )
         from rag_module.triage.deidentification import deidentify
 
         if not GIGACHAT_CREDENTIALS:
             raise RuntimeError("GIGACHAT_CREDENTIALS is not configured")
 
-        for _ in range(count):
+        for item in rag_generate(answers, count=count):
             try:
-                question, options = normalize_generated_question(rag_generate(answers))
+                question, options = normalize_generated_question(item)
                 if not question:
                     continue
                 question = deidentify(question, identifiers)
@@ -483,12 +496,12 @@ def generate_next_questions(session, count: int | None = None) -> list[dict]:
     except Exception:
         logger.warning("RAG question generation unavailable, using fallbacks")
 
-    for question in FALLBACK_QUESTIONS:
+    for question, options in zip(FALLBACK_QUESTIONS, FALLBACK_OPTIONS):
         if len(generated) >= count:
             break
         if question not in seen_questions:
             seen_questions.add(question)
-            generated.append({"question": question, "options": []})
+            generated.append({"question": question, "options": list(options)})
 
     return generated[:count]
 
