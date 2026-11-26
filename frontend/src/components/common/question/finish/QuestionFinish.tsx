@@ -147,7 +147,9 @@ export function QuestionFinish({
               value="recommendation"
               className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
             >
-              <AccordionTrigger>О специалисте</AccordionTrigger>
+              <AccordionTrigger className="p-0 py-4 text-base font-medium hover:no-underline">
+                Специалист
+              </AccordionTrigger>
 
               <AccordionContent>
                 {result.specialistDescription}
@@ -157,7 +159,9 @@ export function QuestionFinish({
               value="placen"
               className="border-max-tertiary! bg-transparent! p-0 data-open:bg-transparent!"
             >
-              <AccordionTrigger>Место обращения</AccordionTrigger>
+              <AccordionTrigger className="p-0 py-4 text-base font-medium hover:no-underline">
+                Место обращения
+              </AccordionTrigger>
 
               <AccordionContent>{result.place}</AccordionContent>
             </AccordionItem>
@@ -165,7 +169,9 @@ export function QuestionFinish({
               value="symptoms"
               className="bg-transparent! data-open:bg-transparent!"
             >
-              <AccordionTrigger>Учтённые симптомы</AccordionTrigger>
+              <AccordionTrigger className="p-0 py-4 text-base font-medium hover:no-underline">
+                Учтённые симптомы
+              </AccordionTrigger>
 
               <AccordionContent>
                 <div className="mb-4 flex flex-wrap gap-2">
