@@ -57,7 +57,10 @@ export function InitialPage() {
 
           <div className="max-w-sm text-center leading-5">
             <PageDescription color="tertiary" variant="description">
-              МедВедь не ставит диагноз и не заменяет консультацию врача.
+              Продолжая использовать наш сервис, вы даете согласие на обработку
+              персональных данных и передачу их в обезличенном виде
+              искусственному интеллекту для предоставления рекомендаций по
+              здоровью.
             </PageDescription>
           </div>
         </footer>
